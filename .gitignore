@@ -1,0 +1,10 @@
+node_modules/
+.env
+npm-debug.log*
+*.xlsx
+*.xls
+*.csv
+uploads/
+tmp/
+temp/
+reports/

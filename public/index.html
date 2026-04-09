@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ระบบสรุปยอดขาย TikTok</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand-block">
+          <p class="eyebrow">LH Order Helper</p>
+          <h1>TikTok Settled Sales</h1>
+          <p class="brand-copy">
+            หน้าหลักสำหรับ import ข้อมูล, เปิดรายงาน daily/monthly และเช็กสถานะระบบ
+            ในมุมมองเดียว
+          </p>
+        </div>
+
+        <nav class="menu">
+          <p class="menu-label">เมนู</p>
+          <a class="menu-link" href="#overview">ภาพรวม</a>
+          <a class="menu-link" href="#imports">นำเข้าข้อมูล</a>
+          <a class="menu-link" href="#product-master">แมปสินค้า</a>
+          <a class="menu-link" href="#reports">หน้ารายงาน</a>
+          <a class="menu-link" href="#tools">เครื่องมือสรุปผล</a>
+          <a class="menu-link" href="#system">สถานะระบบ</a>
+          <a class="menu-link" href="#output">ผลลัพธ์ API</a>
+        </nav>
+
+        <section class="sidebar-panel" id="system">
+          <div class="panel-heading">
+            <h2>สถานะระบบ</h2>
+            <span class="status-pill">พร้อมใช้งาน</span>
+          </div>
+          <p id="health-status" class="status-text">กำลังตรวจสอบการเชื่อมต่อระบบ...</p>
+          <button id="init-db-button" type="button" class="secondary-button">
+            เตรียมฐานข้อมูล
+          </button>
+        </section>
+      </aside>
+
+      <main class="content">
+        <section class="hero-panel" id="overview">
+          <div class="hero-copy">
+            <p class="eyebrow">Dashboard</p>
+            <h2 class="hero-title">หน้าเดียวสำหรับงาน import และออกรายงาน</h2>
+            <p class="hero-text">
+              ออกแบบให้ใช้งานง่าย เน้นลำดับงานที่ชัดเจน: นำเข้าข้อมูลรายวัน, เปิดดูรายงาน,
+              และตรวจผลลัพธ์ที่ API ส่งกลับโดยไม่ต้องไล่หลายหน้า
+            </p>
+          </div>
+          <div class="hero-actions">
+            <a class="action-link primary-link" href="/reports">เปิดหน้ารายงานหลัก</a>
+            <a class="action-link" href="/reports/daily">รายงานรายวัน</a>
+            <a class="action-link" href="/reports/monthly">รายงานรายเดือน</a>
+          </div>
+        </section>
+
+        <section class="section-block" id="imports">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Import</p>
+              <h2>นำเข้าข้อมูล</h2>
+            </div>
+            <p class="section-copy">
+              แยกการนำเข้าระหว่างไฟล์ order export และ income/settlement เพื่อให้ตรวจสอบได้ง่าย
+            </p>
+          </div>
+
+          <div class="panel-grid">
+            <article class="panel" id="product-master">
+              <div class="panel-heading">
+                <h3>นำเข้า Product Master</h3>
+                <span class="panel-tag">แมปสินค้า</span>
+              </div>
+              <p class="panel-copy">
+                ใช้สำหรับแมป <code>product_id</code>, <code>sku_id</code>,
+                <code>seller_sku</code>, variation และ category เพื่อเพิ่มความแม่นของชื่อสินค้า
+              </p>
+              <form id="product-master-import-form" class="stack-form">
+                <label for="product-master-file">ไฟล์ TikTok Batch Edit Template (.xlsx)</label>
+                <input
+                  id="product-master-file"
+                  name="file"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  required
+                />
+                <label for="product-master-uploaded-by">ผู้นำเข้า</label>
+                <input
+                  id="product-master-uploaded-by"
+                  name="uploadedBy"
+                  type="text"
+                  value="web-import"
+                />
+                <button type="submit">นำเข้า Product Master</button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>นำเข้าไฟล์ Order</h3>
+                <span class="panel-tag">Orders</span>
+              </div>
+              <p class="panel-copy">
+                ใช้สำหรับข้อมูลสินค้า, จำนวนขาย, และ item-level rows ที่จะนำไป join กับ income
+              </p>
+              <form id="orders-import-form" class="stack-form">
+                <label for="orders-file">ไฟล์ Order Export (.xlsx)</label>
+                <input
+                  id="orders-file"
+                  name="file"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  required
+                />
+                <label for="orders-uploaded-by">ผู้นำเข้า</label>
+                <input
+                  id="orders-uploaded-by"
+                  name="uploadedBy"
+                  type="text"
+                  value="web-import"
+                />
+                <button type="submit">นำเข้า Orders</button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>นำเข้าไฟล์ Income</h3>
+                <span class="panel-tag">Income</span>
+              </div>
+              <p class="panel-copy">
+                ใช้สำหรับ settlement date, รายได้เงินเข้า, fee และข้อมูลที่ใช้สรุปรายวัน/รายเดือน
+              </p>
+              <form id="income-import-form" class="stack-form">
+                <label for="income-file">ไฟล์ Income / Settlement (.xlsx)</label>
+                <input
+                  id="income-file"
+                  name="file"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  required
+                />
+                <label for="income-uploaded-by">ผู้นำเข้า</label>
+                <input
+                  id="income-uploaded-by"
+                  name="uploadedBy"
+                  type="text"
+                  value="web-import"
+                />
+                <button type="submit">นำเข้า Income</button>
+              </form>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-block" id="reports">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Reports</p>
+              <h2>มุมมองรายงาน</h2>
+            </div>
+            <p class="section-copy">
+              เปิดหน้า report แบบเป็นทางการเพื่ออ่านข้อมูลสรุปได้ง่ายกว่า JSON output
+            </p>
+          </div>
+
+          <div class="link-grid">
+            <a class="nav-card" href="/reports">
+              <strong>Reports Home</strong>
+              <span>หน้าเลือกดูรายงานรายวันและรายเดือน</span>
+            </a>
+            <a class="nav-card" href="/reports/daily?date=2026-04-09">
+              <strong>รายงานรายวัน</strong>
+              <span>ตัวอย่างมุมมองรายวันสำหรับตัดสต๊อก</span>
+            </a>
+            <a class="nav-card" href="/reports/monthly?month=2026-04">
+              <strong>รายงานรายเดือน</strong>
+              <span>ตัวอย่างมุมมองรายเดือนสำหรับ ERP</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="section-block" id="tools">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Tools</p>
+              <h2>Summary Tools</h2>
+            </div>
+            <p class="section-copy">
+              ใช้เรียกดูผลสรุปจาก API ตรง ๆ ก่อนไปดูใน report view หรือใช้ตรวจผลลัพธ์ระหว่างพัฒนา
+            </p>
+          </div>
+
+          <div class="panel-grid">
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>สรุปรายวัน</h3>
+                <span class="panel-tag">API</span>
+              </div>
+              <form id="daily-form" class="stack-form">
+                <label for="daily-date">วันที่ Settlement</label>
+                <input id="daily-date" name="date" type="date" required />
+                <button type="submit">โหลดสรุปรายวัน</button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>สรุปรายเดือน</h3>
+                <span class="panel-tag">API</span>
+              </div>
+              <form id="monthly-form" class="stack-form">
+                <label for="monthly-month">เดือน Settlement</label>
+                <input id="monthly-month" name="month" type="month" required />
+                <button type="submit">โหลดสรุปรายเดือน</button>
+              </form>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-block" id="output">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Debug</p>
+              <h2>API Output</h2>
+            </div>
+            <p class="section-copy">
+              ใช้ดูผลลัพธ์ดิบจาก API หลัง import หรือหลังเรียก summary tools
+            </p>
+          </div>
+
+          <section class="panel output-panel">
+              <div class="panel-heading">
+              <h3>ผลลัพธ์ JSON</h3>
+              <span class="panel-tag">Output</span>
+            </div>
+            <pre id="output">รอการทำงาน...</pre>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

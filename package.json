@@ -1,0 +1,26 @@
+{
+  "name": "lh-order-tiktok-helper",
+  "version": "1.0.0",
+  "description": "TikTok settled sales summary for daily stock cutting and monthly ERP reporting",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "keywords": [
+    "express",
+    "mongodb",
+    "tiktok",
+    "erp"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ejs": "^5.0.1",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5",
+    "multer": "^2.1.1",
+    "xlsx": "^0.18.5"
+  }
+}

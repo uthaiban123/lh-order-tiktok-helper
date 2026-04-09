@@ -1,0 +1,10 @@
+<%- include('./partials/report-head', { title }) %>
+<main class="report-shell error-shell">
+  <section class="panel">
+    <p class="kicker">ข้อผิดพลาด</p>
+    <h1>สถานะ <%= statusCode %></h1>
+    <p class="subtitle"><%= message %></p>
+    <a class="inline-link" href="/reports">กลับหน้ารายงาน</a>
+  </section>
+</main>
+<%- include('./partials/report-foot') %>

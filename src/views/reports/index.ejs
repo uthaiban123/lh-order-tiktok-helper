@@ -1,0 +1,35 @@
+<%- include('../partials/report-head', { title }) %>
+<main class="report-shell landing-shell">
+  <section class="report-hero">
+    <div>
+      <p class="kicker">LH Order Helper</p>
+      <h1>รายงานสรุปยอดขาย TikTok</h1>
+      <p class="subtitle">
+        หน้าออกรายงานสำหรับตรวจยอดรายวันเพื่อใช้ตัดสต๊อก และรายเดือนเพื่อใช้รวมยอดสำหรับ ERP
+      </p>
+    </div>
+  </section>
+
+  <section class="panel-grid">
+    <section class="panel">
+      <h2>รายงานรายวัน</h2>
+      <p>ออกรายงานตามวันที่เงิน settle เข้า เพื่อใช้ตัดสต๊อกและตรวจยอดสินค้าที่ขายในวันนั้น</p>
+      <form action="/reports/daily" method="get" class="report-form">
+        <label for="date">วันที่ Settlement</label>
+        <input id="date" name="date" type="date" value="<%= today %>" required />
+        <button type="submit">เปิดรายงานรายวัน</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>รายงานรายเดือน</h2>
+      <p>ออกรายงานรวมทั้งเดือนตาม settlement month เพื่อใช้กรอก ERP และดูยอดรวมระดับสินค้า</p>
+      <form action="/reports/monthly" method="get" class="report-form">
+        <label for="month">เดือน Settlement</label>
+        <input id="month" name="month" type="month" value="<%= currentMonth %>" required />
+        <button type="submit">เปิดรายงานรายเดือน</button>
+      </form>
+    </section>
+  </section>
+</main>
+<%- include('../partials/report-foot') %>

@@ -1,0 +1,9 @@
+.git
+.gitignore
+.env
+.env.*
+node_modules
+npm-debug.log
+PLAN.md
+AGENT.MD
+ecosystem.config.cjs

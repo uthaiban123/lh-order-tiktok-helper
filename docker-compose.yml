@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lh-order-tiktok-helper
+    restart: unless-stopped
+    ports:
+      - "${PORT:-6600}:6600"
+    environment:
+      NODE_ENV: production
+      PORT: 6600
+      MONGODB_URI: ${MONGODB_URI}
+      DATABASE_NAME: ${DATABASE_NAME}

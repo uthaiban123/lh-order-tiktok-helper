@@ -1,0 +1,98 @@
+<%- include('../partials/report-head', { title }) %>
+<main class="report-shell">
+  <header class="report-hero">
+    <div>
+      <p class="kicker">รายงานรายวัน</p>
+      <h1>สรุปยอดขาย TikTok</h1>
+      <p class="subtitle">วันที่ Settlement: <strong><%= periodLabel %></strong></p>
+    </div>
+    <nav class="hero-actions">
+      <a href="/reports">กลับหน้ารายงาน</a>
+      <a href="/reports/monthly?month=<%= periodLabel.slice(0, 7) %>">ดูรายเดือน</a>
+      <button type="button" data-print-report>พิมพ์รายงาน</button>
+    </nav>
+  </header>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <span class="stat-label">จำนวนออเดอร์ที่รับรู้แล้ว</span>
+      <strong><%= formatNumber(summary.sourceStats.settledOrders) %></strong>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">ออเดอร์ที่แมปสินค้าได้</span>
+      <strong><%= formatNumber(summary.sourceStats.matchedOrders) %></strong>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">ความครอบคลุม</span>
+      <strong><%= formatPercent(summary.sourceStats.coveragePercent) %></strong>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">ยอด Settlement</span>
+      <strong><%= formatMoney(summary.financeSummary.totalSettlementAmount) %></strong>
+    </article>
+  </section>
+
+  <section class="panel">
+    <h2>สรุปการเงิน</h2>
+    <div class="key-value-grid">
+      <div><span>รายได้รวม</span><strong><%= formatMoney(summary.financeSummary.totalRevenue) %></strong></div>
+      <div><span>ยอด Settlement รวม</span><strong><%= formatMoney(summary.financeSummary.totalSettlementAmount) %></strong></div>
+      <div><span>ค่าธรรมเนียมรวม</span><strong><%= formatMoney(summary.financeSummary.totalFees) %></strong></div>
+      <div><span>ค่าส่งที่ผู้ขายรับผิดชอบ</span><strong><%= formatMoney(summary.financeSummary.sellerShippingFee) %></strong></div>
+      <div><span>ค่า Affiliate Commission</span><strong><%= formatMoney(summary.financeSummary.affiliateCommission) %></strong></div>
+      <div><span>ยอดถอนเงิน</span><strong><%= formatMoney(summary.withdrawalSummary.withdrawalAmount) %></strong></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>สรุปตาม SKU</h2>
+      <span><%= formatNumber(summary.skuSummary.length) %> รายการ</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Seller SKU</th>
+            <th>ชื่อสินค้า</th>
+            <th>จำนวนออเดอร์</th>
+            <th>จำนวนขาย</th>
+            <th>หน่วยฐาน</th>
+            <th>ราคาต่อหน่วย</th>
+            <th>ยอดรวม</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (summary.skuSummary.length === 0) { %>
+            <tr><td colspan="7" class="empty-cell">ไม่มีข้อมูล</td></tr>
+          <% } %>
+          <% summary.skuSummary.forEach((row) => { %>
+            <tr>
+              <td><%= row.sellerSku || "-" %></td>
+              <td><%= row.productName %></td>
+              <td class="num"><%= formatNumber(row.ordersCount) %></td>
+              <td class="num"><%= formatNumber(row.soldUnitsTikTok) %></td>
+              <td class="num"><%= formatNumber(row.equivalentBaseUnits) %></td>
+              <td class="num"><%= row.soldUnitsTikTok > 0 ? formatMoney(row.grossItemAmount / row.soldUnitsTikTok) : "-" %></td>
+              <td class="num"><%= formatMoney(row.grossItemAmount) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>คำเตือน</h2>
+    <% if (summary.warnings.length === 0) { %>
+      <p class="muted">ไม่มีคำเตือน</p>
+    <% } else { %>
+      <ul class="warning-list">
+        <% summary.warnings.forEach((warning) => { %>
+          <li><strong><%= warning.type %></strong> <span><%= warning.message %></span></li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+</main>
+<%- include('../partials/report-foot') %>
