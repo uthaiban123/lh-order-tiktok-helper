@@ -76,6 +76,19 @@ git pull
 docker compose up -d --build
 ```
 
+หรือใช้สคริปต์เดียว:
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+ถ้าไม่ต้องการ `git pull` ในรอบนั้น:
+
+```bash
+./deploy.sh --no-pull
+```
+
 หยุดระบบ:
 
 ```bash
