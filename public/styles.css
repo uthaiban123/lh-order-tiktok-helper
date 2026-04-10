@@ -242,6 +242,11 @@ button {
   gap: 16px;
 }
 
+.import-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+
 .link-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -322,6 +327,10 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .import-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .hero-panel,
   .section-head {
     display: block;
@@ -348,5 +357,9 @@ code {
   .sidebar-panel,
   .panel {
     padding: 16px;
+  }
+
+  .import-grid {
+    grid-template-columns: 1fr;
   }
 }
