@@ -429,6 +429,32 @@ async function importProductMasterWorkbook({ buffer, filename, uploadedBy }) {
     quantity: toNumber(findValue(row, headerIndexMap, ["quantity"])),
   }));
 
+  const existingProductMasters = await ProductMaster.find(
+    {
+      skuId: { $in: preparedRows.map((row) => row.skuId).filter(Boolean) },
+    },
+    {
+      _id: 0,
+      skuId: 1,
+      manualSellerSku: 1,
+      manualSellerSkuEnabled: 1,
+    }
+  ).lean();
+
+  const existingProductMasterBySkuId = new Map(
+    existingProductMasters.map((row) => [row.skuId, row])
+  );
+
+  for (const row of preparedRows) {
+    const existing = existingProductMasterBySkuId.get(row.skuId);
+    row.manualSellerSku = existing?.manualSellerSku || "";
+    row.manualSellerSkuEnabled = existing?.manualSellerSkuEnabled || false;
+
+    if (row.manualSellerSkuEnabled && row.manualSellerSku) {
+      row.sellerSku = row.manualSellerSku;
+    }
+  }
+
   const sellerSkuCounts = new Map();
   for (const row of preparedRows) {
     if (!row.sellerSku) {
@@ -445,7 +471,7 @@ async function importProductMasterWorkbook({ buffer, filename, uploadedBy }) {
 
   const skuIds = preparedRows.map((row) => row.skuId).filter(Boolean);
   const existingSkuIds = new Set(
-    await ProductMaster.find({ skuId: { $in: skuIds } }).distinct("skuId")
+    existingProductMasters.map((row) => row.skuId)
   );
 
   const bulkOperations = preparedRows.map((row) => ({

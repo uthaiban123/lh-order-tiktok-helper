@@ -26,6 +26,16 @@ const productMasterSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    manualSellerSku: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    manualSellerSkuEnabled: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     productName: {
       type: String,
       required: true,

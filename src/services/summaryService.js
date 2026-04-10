@@ -2,6 +2,55 @@ const IncomeEntry = require("../models/IncomeEntry");
 const OrderItem = require("../models/OrderItem");
 const ProductMaster = require("../models/ProductMaster");
 
+function normalizeText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeVariation(value) {
+  const normalized = normalizeText(value)
+    .replace(/^default$/, "ค่าเริ่มต้น");
+
+  if (!normalized) {
+    return "ค่าเริ่มต้น";
+  }
+
+  return normalized;
+}
+
+function getNameVariationKey(productName, variation) {
+  return `${normalizeText(productName)}|||${normalizeVariation(variation)}`;
+}
+
+function buildUniqueMap(rows, keySelector) {
+  const grouped = new Map();
+
+  for (const row of rows) {
+    const key = keySelector(row);
+    if (!key) {
+      continue;
+    }
+
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+
+    grouped.get(key).push(row);
+  }
+
+  const uniqueMap = new Map();
+
+  for (const [key, group] of grouped.entries()) {
+    if (group.length === 1) {
+      uniqueMap.set(key, group[0]);
+    }
+  }
+
+  return uniqueMap;
+}
+
 function buildFinanceProjectStage() {
   return {
     _id: null,
@@ -21,6 +70,131 @@ function buildFinanceProjectStage() {
     infrastructureFee: { $sum: "$infrastructureFee" },
     totalAdjustments: { $sum: "$totalAdjustments" },
     withdrawalAmount: { $sum: "$withdrawalAmount" },
+  };
+}
+
+function summarizeOrderItems(orderItems, productMasters) {
+  const productMasterBySellerSku = buildUniqueMap(
+    productMasters.filter((row) => String(row.sellerSku || "").trim()),
+    (row) => String(row.sellerSku || "").trim()
+  );
+
+  const productMasterByNameVariation = buildUniqueMap(
+    productMasters.filter((row) => String(row.sellerSku || "").trim()),
+    (row) => getNameVariationKey(row.productName, row.variationValue)
+  );
+
+  const skuSummaryMap = new Map();
+  const baseProductSummaryMap = new Map();
+  let inferredSellerSkuItemRows = 0;
+  let unresolvedSellerSkuItemRows = 0;
+
+  for (const item of orderItems) {
+    const rawSellerSku = String(item.sellerSku || "").trim();
+    const sellerSkuMapping = rawSellerSku
+      ? productMasterBySellerSku.get(rawSellerSku)
+      : null;
+    const nameVariationMapping = rawSellerSku
+      ? null
+      : productMasterByNameVariation.get(
+          getNameVariationKey(item.productName, item.variation)
+        );
+
+    const effectiveMapping = sellerSkuMapping || nameVariationMapping || null;
+    const effectiveSellerSku = rawSellerSku || effectiveMapping?.sellerSku || "";
+    const effectiveProductName = effectiveMapping?.productName || item.productName;
+    const skuKey = `${effectiveSellerSku}|||${effectiveProductName}`;
+    const baseProductCode = String(item.baseProductCode || "").trim();
+    const baseKey = baseProductCode || effectiveProductName;
+
+    if (!rawSellerSku) {
+      if (effectiveSellerSku) {
+        inferredSellerSkuItemRows += 1;
+      } else {
+        unresolvedSellerSkuItemRows += 1;
+      }
+    }
+
+    if (!skuSummaryMap.has(skuKey)) {
+      skuSummaryMap.set(skuKey, {
+        sellerSku: effectiveSellerSku,
+        productName: effectiveProductName,
+        baseProductCode,
+        packMultiplier: item.packMultiplier,
+        ordersSet: new Set(),
+        soldUnitsTikTok: 0,
+        equivalentBaseUnits: 0,
+        grossItemAmount: 0,
+        mappedSkuId: effectiveMapping?.skuId,
+        mappedProductId: effectiveMapping?.productId,
+        mappedVariationValue: effectiveMapping?.variationValue,
+        mappedCategory: effectiveMapping?.category,
+        mappingSource: !rawSellerSku && effectiveMapping ? "product_master_name_variation" : effectiveMapping ? "product_master" : undefined,
+      });
+    }
+
+    const skuSummaryRow = skuSummaryMap.get(skuKey);
+    skuSummaryRow.ordersSet.add(item.orderId);
+    skuSummaryRow.soldUnitsTikTok += item.qty;
+    skuSummaryRow.equivalentBaseUnits += item.qty * item.packMultiplier;
+    skuSummaryRow.grossItemAmount += item.itemSubtotalAfterDiscount;
+
+    if (!baseProductSummaryMap.has(baseKey)) {
+      baseProductSummaryMap.set(baseKey, {
+        baseProductCode,
+        productName: effectiveProductName,
+        ordersSet: new Set(),
+        soldUnitsTikTok: 0,
+        equivalentBaseUnits: 0,
+        grossItemAmount: 0,
+      });
+    }
+
+    const baseSummaryRow = baseProductSummaryMap.get(baseKey);
+    baseSummaryRow.ordersSet.add(item.orderId);
+    baseSummaryRow.soldUnitsTikTok += item.qty;
+    baseSummaryRow.equivalentBaseUnits += item.qty * item.packMultiplier;
+    baseSummaryRow.grossItemAmount += item.itemSubtotalAfterDiscount;
+  }
+
+  const skuSummary = [...skuSummaryMap.values()]
+    .map((row) => ({
+      ...row,
+      ordersCount: row.ordersSet.size,
+    }))
+    .sort((left, right) => {
+      if (right.grossItemAmount !== left.grossItemAmount) {
+        return right.grossItemAmount - left.grossItemAmount;
+      }
+
+      return String(left.sellerSku || "").localeCompare(String(right.sellerSku || ""));
+    });
+
+  const baseProductSummary = [...baseProductSummaryMap.values()]
+    .map((row) => ({
+      ...row,
+      ordersCount: row.ordersSet.size,
+    }))
+    .sort((left, right) => {
+      if (right.grossItemAmount !== left.grossItemAmount) {
+        return right.grossItemAmount - left.grossItemAmount;
+      }
+
+      return String(left.baseProductCode || "").localeCompare(String(right.baseProductCode || ""));
+    });
+
+  return {
+    skuSummary,
+    baseProductSummary,
+    inferredSellerSkuItemRows,
+    unresolvedSellerSkuItemRows,
+    duplicateSellerSkuWarnings: [
+      ...new Map(
+        productMasters
+          .filter((row) => row.isSellerSkuUnique === false && String(row.sellerSku || "").trim())
+          .map((row) => [row.sellerSku, row])
+      ).values(),
+    ],
   };
 }
 
@@ -55,88 +229,27 @@ async function buildSummary({ settlementDate, month }) {
 
   const orderIds = await IncomeEntry.distinct("orderId", match);
 
-  const skuSummary = await OrderItem.aggregate([
-    { $match: { orderId: { $in: orderIds } } },
+  const orderItems = await OrderItem.find(
+    { orderId: { $in: orderIds } },
     {
-      $group: {
-        _id: {
-          sellerSku: "$sellerSku",
-          productName: "$productName",
-        },
-        sellerSku: { $first: "$sellerSku" },
-        productName: { $first: "$productName" },
-        baseProductCode: { $first: "$baseProductCode" },
-        packMultiplier: { $first: "$packMultiplier" },
-        ordersCount: { $addToSet: "$orderId" },
-        soldUnitsTikTok: { $sum: "$qty" },
-        equivalentBaseUnits: {
-          $sum: { $multiply: ["$qty", "$packMultiplier"] },
-        },
-        grossItemAmount: { $sum: "$itemSubtotalAfterDiscount" },
-      },
-    },
-    {
-      $project: {
-        _id: 0,
-        sellerSku: 1,
-        productName: 1,
-        baseProductCode: 1,
-        packMultiplier: 1,
-        ordersCount: { $size: "$ordersCount" },
-        soldUnitsTikTok: 1,
-        equivalentBaseUnits: 1,
-        grossItemAmount: 1,
-      },
-    },
-    { $sort: { grossItemAmount: -1, sellerSku: 1 } },
-  ]);
-
-  const baseProductSummary = await OrderItem.aggregate([
-    { $match: { orderId: { $in: orderIds } } },
-    {
-      $group: {
-        _id: "$baseProductCode",
-        baseProductCode: { $first: "$baseProductCode" },
-        productName: { $first: "$productName" },
-        ordersCount: { $addToSet: "$orderId" },
-        soldUnitsTikTok: { $sum: "$qty" },
-        equivalentBaseUnits: {
-          $sum: { $multiply: ["$qty", "$packMultiplier"] },
-        },
-        grossItemAmount: { $sum: "$itemSubtotalAfterDiscount" },
-      },
-    },
-    {
-      $project: {
-        _id: 0,
-        baseProductCode: 1,
-        productName: 1,
-        ordersCount: { $size: "$ordersCount" },
-        soldUnitsTikTok: 1,
-        equivalentBaseUnits: 1,
-        grossItemAmount: 1,
-      },
-    },
-    { $sort: { grossItemAmount: -1, baseProductCode: 1 } },
-  ]);
+      _id: 0,
+      orderId: 1,
+      sellerSku: 1,
+      productName: 1,
+      variation: 1,
+      qty: 1,
+      itemSubtotalAfterDiscount: 1,
+      baseProductCode: 1,
+      packMultiplier: 1,
+    }
+  ).lean();
 
   const matchedOrders = await OrderItem.distinct("orderId", {
     orderId: { $in: orderIds },
   });
 
-  const sellerSkus = [
-    ...new Set(
-      skuSummary
-        .map((row) => String(row.sellerSku || "").trim())
-        .filter(Boolean)
-    ),
-  ];
-
   const productMasters = await ProductMaster.find(
-    {
-      sellerSku: { $in: sellerSkus },
-      isSellerSkuUnique: true,
-    },
+    {},
     {
       _id: 0,
       sellerSku: 1,
@@ -145,88 +258,52 @@ async function buildSummary({ settlementDate, month }) {
       productName: 1,
       variationValue: 1,
       category: 1,
-    }
-  ).lean();
-
-  const duplicateSellerSkuMasters = await ProductMaster.find(
-    {
-      sellerSku: { $in: sellerSkus },
-      isSellerSkuUnique: false,
-    },
-    {
-      _id: 0,
-      sellerSku: 1,
+      isSellerSkuUnique: 1,
       duplicateSellerSkuCount: 1,
     }
   ).lean();
 
-  const productMasterBySellerSku = new Map(
-    productMasters.map((row) => [row.sellerSku, row])
-  );
-
-  const enrichedSkuSummary = skuSummary.map((row) => {
-    const mapping = productMasterBySellerSku.get(row.sellerSku);
-    if (!mapping) {
-      return row;
-    }
-
-    return {
-      ...row,
-      mappedSkuId: mapping.skuId,
-      mappedProductId: mapping.productId,
-      mappedVariationValue: mapping.variationValue,
-      mappedCategory: mapping.category,
-      productName: mapping.productName || row.productName,
-      mappingSource: "product_master",
-    };
-  });
-
-  const enrichedBaseProductSummary = baseProductSummary.map((row) => {
-    const candidates = enrichedSkuSummary.filter(
-      (skuRow) => skuRow.baseProductCode === row.baseProductCode
-    );
-    const mappedCandidate = candidates.find((candidate) => candidate.mappingSource === "product_master");
-
-    if (!mappedCandidate) {
-      return row;
-    }
-
-    return {
-      ...row,
-      productName: mappedCandidate.productName || row.productName,
-    };
-  });
+  const {
+    skuSummary,
+    baseProductSummary,
+    inferredSellerSkuItemRows,
+    unresolvedSellerSkuItemRows,
+    duplicateSellerSkuWarnings,
+  } = summarizeOrderItems(orderItems, productMasters);
 
   const sourceStats = {
     settledOrders: financeSummary.settledOrders || 0,
     matchedOrders: matchedOrders.length,
     missingOrderItemOrders: Math.max(orderIds.length - matchedOrders.length, 0),
-    unmatchedItemRows: 0,
+    inferredSellerSkuItemRows,
+    unresolvedSellerSkuItemRows,
     coveragePercent:
       orderIds.length === 0
         ? 0
         : Number(((matchedOrders.length / orderIds.length) * 100).toFixed(2)),
   };
 
-  const duplicateSellerSkuWarnings = [
-    ...new Map(
-      duplicateSellerSkuMasters.map((row) => [row.sellerSku, row])
-    ).values(),
-  ];
-
   return {
     financeSummary,
     withdrawalSummary: {
       withdrawalAmount: financeSummary.withdrawalAmount || 0,
     },
-    skuSummary: enrichedSkuSummary,
-    baseProductSummary: enrichedBaseProductSummary,
+    skuSummary,
+    baseProductSummary,
     warnings: [
       ...(sourceStats.missingOrderItemOrders
         ? [
             {
               type: "missing_order_items",
               message: "Some settled orders are missing order item rows.",
+            },
+          ]
+        : []),
+      ...(sourceStats.unresolvedSellerSkuItemRows
+        ? [
+            {
+              type: "missing_seller_sku",
+              message: "Some order item rows are still missing seller SKU after product master matching.",
             },
           ]
         : []),

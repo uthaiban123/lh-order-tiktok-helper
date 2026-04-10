@@ -91,6 +91,54 @@ router.post("/order-items", asyncHandler(async (req, res) => {
   res.status(201).json({ inserted: docs.length });
 }));
 
+router.patch("/product-master/manual-sku", asyncHandler(async (req, res) => {
+  const skuId = String(req.body.skuId || "").trim();
+  const sellerSku = String(req.body.sellerSku || "").trim();
+
+  if (!skuId) {
+    return res.status(400).json({ error: "skuId is required" });
+  }
+
+  if (!sellerSku) {
+    return res.status(400).json({ error: "sellerSku is required" });
+  }
+
+  const productMaster = await ProductMaster.findOneAndUpdate(
+    { skuId },
+    {
+      $set: {
+        sellerSku,
+        manualSellerSku: sellerSku,
+        manualSellerSkuEnabled: true,
+        isSellerSkuUnique: true,
+        duplicateSellerSkuCount: 1,
+      },
+    },
+    {
+      new: true,
+      projection: {
+        _id: 0,
+        skuId: 1,
+        productId: 1,
+        productName: 1,
+        variationValue: 1,
+        sellerSku: 1,
+        manualSellerSku: 1,
+        manualSellerSkuEnabled: 1,
+      },
+    }
+  ).lean();
+
+  if (!productMaster) {
+    return res.status(404).json({ error: "product master not found" });
+  }
+
+  return res.json({
+    ok: true,
+    item: productMaster,
+  });
+}));
+
 router.post(
   "/import/product-master",
   upload.single("file"),
