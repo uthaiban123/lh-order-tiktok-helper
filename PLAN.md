@@ -81,6 +81,7 @@
   - `soldUnitsTikTok = sum(qty)`
   - `equivalentBaseUnits = sum(qty * packMultiplier)`
   - `grossItemAmount = sum(item subtotal after discount)`
+  - `receivedSettlementAmount = allocate order settlement ลงสินค้าใน order ตามสัดส่วน item subtotal`
 - รายได้และค่าธรรมเนียมใช้ข้อมูลจาก income file เท่านั้น
 - สินค้าและจำนวนใช้ข้อมูลจาก order export เท่านั้น
 
@@ -120,6 +121,7 @@
 - ไฟล์ order export มีข้อมูลระดับสินค้าใช้งานได้ดี เช่น `Order ID`, `Seller SKU`, `Product Name`, `Quantity`, `SKU Subtotal After Discount`
 - field ระดับ order เช่น `Order Amount` อาจซ้ำทุกแถวของ order เดียวกัน ห้าม sum ตรงที่ระดับ item row
 - ถ้า order ใน income ยังไม่เจอข้อมูลสินค้า ให้ถือว่าเป็น `missing order items`
+- ถ้า order ใน income ยังไม่เจอข้อมูลสินค้า แต่มี settlement amount ให้แสดงเป็น synthetic adjustment row เพื่อให้ยอดรวมสินค้า reconcile กับ settlement ได้
 - Daily/Monthly summary ต้องแสดง coverage ว่ามี settled orders ที่ map สินค้าได้ครบกี่ order
 - การตัดสต๊อกและ summary ERP ควรอิงเฉพาะ order ที่ join สินค้าได้สำเร็จ พร้อม warning ส่วนที่ยังขาด
 
@@ -173,6 +175,7 @@
   - `soldUnitsTikTok`
   - `equivalentBaseUnits`
   - `grossItemAmount`
+  - `receivedSettlementAmount`
 - `baseProductSummary[]` ขั้นต่ำ:
   - `baseProductCode`
   - `productName`
@@ -180,6 +183,7 @@
   - `soldUnitsTikTok`
   - `equivalentBaseUnits`
   - `grossItemAmount`
+  - `receivedSettlementAmount`
 - `warnings[]` ขั้นต่ำ:
   - `type`
   - `message`

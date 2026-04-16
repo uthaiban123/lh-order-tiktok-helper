@@ -185,9 +185,23 @@ td.num { text-align: right; white-space: nowrap; }
   background: var(--warn-soft);
   border-radius: 12px;
 }
+.warning-title {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
 .warning-list strong {
   color: var(--warn);
   margin-right: 10px;
+}
+.warning-details {
+  margin-top: 12px;
+}
+.warning-meta {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
 }
 .compact-wrap table {
   min-width: 640px;

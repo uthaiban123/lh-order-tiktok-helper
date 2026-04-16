@@ -49,7 +49,7 @@
       <span>ยอดรวมระดับ base product สำหรับลงบัญชี</span>
     </div>
     <p class="muted">
-      ใช้ตารางนี้เป็นตัวสรุปหลักสำหรับรวมยอดกรอก ERP โดยดูคู่กับ coverage ด้านบน
+      ใช้ตารางนี้เป็นตัวสรุปหลักสำหรับรวมยอดกรอก ERP โดยเงินรับจริงจะถูกเฉลี่ยจาก Settlement ต่อออเดอร์ตามสัดส่วนยอดสินค้าเดิม
     </p>
     <div class="table-wrap">
       <table>
@@ -58,8 +58,8 @@
             <th>ชื่อสินค้า</th>
             <th>จำนวนขาย</th>
             <th>หน่วยฐาน</th>
-            <th>ราคาต่อหน่วย</th>
-            <th>ยอดรวม</th>
+            <th>เงินรับจริง/หน่วย</th>
+            <th>เงินรับจริง</th>
           </tr>
         </thead>
         <tbody>
@@ -71,25 +71,22 @@
               <td><%= row.productName %></td>
               <td class="num"><%= formatNumber(row.soldUnitsTikTok) %></td>
               <td class="num"><%= formatNumber(row.equivalentBaseUnits) %></td>
-              <td class="num"><%= row.soldUnitsTikTok > 0 ? formatMoney(row.grossItemAmount / row.soldUnitsTikTok) : "-" %></td>
-              <td class="num"><%= formatMoney(row.grossItemAmount) %></td>
+              <td class="num"><%= row.soldUnitsTikTok > 0 ? formatMoney(row.receivedSettlementAmount / row.soldUnitsTikTok) : "-" %></td>
+              <td class="num"><%= formatMoney(row.receivedSettlementAmount) %></td>
             </tr>
           <% }) %>
         </tbody>
         <tfoot>
           <tr>
-            <th>รวมทั้งหมด</th>
-            <th class="num"><%= formatNumber(summary.baseProductSummary.reduce((sum, row) => sum + row.soldUnitsTikTok, 0)) %></th>
-            <th class="num"><%= formatNumber(summary.baseProductSummary.reduce((sum, row) => sum + row.equivalentBaseUnits, 0)) %></th>
+            <th>Grand Total</th>
+            <th class="num"><%= formatNumber(summary.totals.baseProductSummary.soldUnitsTikTok) %></th>
+            <th class="num"><%= formatNumber(summary.totals.baseProductSummary.equivalentBaseUnits) %></th>
             <th class="num">
-              <%= summary.baseProductSummary.reduce((sum, row) => sum + row.soldUnitsTikTok, 0) > 0
-                ? formatMoney(
-                    summary.baseProductSummary.reduce((sum, row) => sum + row.grossItemAmount, 0) /
-                    summary.baseProductSummary.reduce((sum, row) => sum + row.soldUnitsTikTok, 0),
-                  )
+              <%= summary.totals.baseProductSummary.soldUnitsTikTok > 0
+                ? formatMoney(summary.totals.baseProductSummary.unitPriceAverage)
                 : "-" %>
             </th>
-            <th class="num"><%= formatMoney(summary.baseProductSummary.reduce((sum, row) => sum + row.grossItemAmount, 0)) %></th>
+            <th class="num"><%= formatMoney(summary.totals.baseProductSummary.amount) %></th>
           </tr>
         </tfoot>
       </table>
@@ -109,8 +106,8 @@
             <th>จำนวนออเดอร์</th>
             <th>จำนวนขาย</th>
             <th>หน่วยฐาน</th>
-            <th>ราคาต่อหน่วย</th>
-            <th>ยอดรวม</th>
+            <th>เงินรับจริง/หน่วย</th>
+            <th>เงินรับจริง</th>
           </tr>
         </thead>
         <tbody>
@@ -123,11 +120,21 @@
               <td class="num"><%= formatNumber(row.ordersCount) %></td>
               <td class="num"><%= formatNumber(row.soldUnitsTikTok) %></td>
               <td class="num"><%= formatNumber(row.equivalentBaseUnits) %></td>
-              <td class="num"><%= row.soldUnitsTikTok > 0 ? formatMoney(row.grossItemAmount / row.soldUnitsTikTok) : "-" %></td>
-              <td class="num"><%= formatMoney(row.grossItemAmount) %></td>
+              <td class="num"><%= row.soldUnitsTikTok > 0 ? formatMoney(row.receivedSettlementAmount / row.soldUnitsTikTok) : "-" %></td>
+              <td class="num"><%= formatMoney(row.receivedSettlementAmount) %></td>
             </tr>
           <% }) %>
         </tbody>
+        <tfoot>
+          <tr>
+            <th>Grand Total</th>
+            <th class="num"><%= formatNumber(summary.totals.baseProductSummary.ordersCount) %></th>
+            <th class="num"><%= formatNumber(summary.totals.baseProductSummary.soldUnitsTikTok) %></th>
+            <th class="num"><%= formatNumber(summary.totals.baseProductSummary.equivalentBaseUnits) %></th>
+            <th class="num"><%= summary.totals.baseProductSummary.soldUnitsTikTok > 0 ? formatMoney(summary.totals.baseProductSummary.unitPriceAverage) : "-" %></th>
+            <th class="num"><%= formatMoney(summary.totals.baseProductSummary.amount) %></th>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </section>
@@ -139,7 +146,46 @@
     <% } else { %>
       <ul class="warning-list">
         <% summary.warnings.forEach((warning) => { %>
-          <li><strong><%= warning.type %></strong> <span><%= warning.message %></span></li>
+          <li>
+            <div class="warning-title">
+              <strong><%= warning.type %></strong>
+              <span><%= warning.message %></span>
+            </div>
+            <% if (warning.details && warning.details.rows.length > 0) { %>
+              <div class="table-wrap compact-wrap warning-details">
+                <table class="compact-table">
+                  <thead>
+                    <tr>
+                      <% warning.columns.forEach((column) => { %>
+                        <th><%= column.label %></th>
+                      <% }) %>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% warning.details.rows.forEach((detail) => { %>
+                      <tr>
+                        <% warning.columns.forEach((column) => { %>
+                          <% const rawValue = detail[column.key]; %>
+                          <td class="<%= column.format === 'money' || column.format === 'number' ? 'num' : '' %>">
+                            <% if (column.format === "money") { %>
+                              <%= formatMoney(rawValue) %>
+                            <% } else if (column.format === "number") { %>
+                              <%= formatNumber(rawValue) %>
+                            <% } else { %>
+                              <%= rawValue || "-" %>
+                            <% } %>
+                          </td>
+                        <% }) %>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+              <% if (warning.details.extraCount > 0) { %>
+                <p class="warning-meta">แสดง <%= formatNumber(warning.details.rows.length) %> จากทั้งหมด <%= formatNumber(warning.details.totalCount) %> รายการ</p>
+              <% } %>
+            <% } %>
+          </li>
         <% }) %>
       </ul>
     <% } %>
