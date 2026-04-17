@@ -204,6 +204,46 @@ router.post(
   })
 );
 
+router.get("/available-dates", asyncHandler(async (req, res) => {
+  const requestedMonth = String(req.query.month || "").trim();
+  const month = /^\d{4}-\d{2}$/.test(requestedMonth)
+    ? requestedMonth
+    : new Date().toISOString().slice(0, 7);
+
+  const items = await IncomeEntry.aggregate([
+    {
+      $match: {
+        settlementDate: { $regex: `^${month}` },
+      },
+    },
+    {
+      $group: {
+        _id: "$settlementDate",
+        incomeEntries: { $sum: 1 },
+        orderIds: { $addToSet: "$orderId" },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        date: "$_id",
+        incomeEntries: 1,
+        settledOrders: { $size: "$orderIds" },
+      },
+    },
+    {
+      $sort: {
+        date: 1,
+      },
+    },
+  ]);
+
+  return res.json({
+    month,
+    items,
+  });
+}));
+
 router.get("/daily-summary", asyncHandler(async (req, res) => {
   const { date } = req.query;
   if (!date) {

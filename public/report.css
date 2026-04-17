@@ -18,6 +18,56 @@ body {
   background: linear-gradient(180deg, #f7f2ea 0%, var(--bg) 100%);
   font-family: "Segoe UI", Tahoma, sans-serif;
 }
+.page-nav-shell {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 14px 0 0;
+  background: linear-gradient(180deg, rgba(247, 242, 234, 0.96), rgba(247, 242, 234, 0));
+  backdrop-filter: blur(10px);
+}
+.page-nav {
+  width: min(1280px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 253, 250, 0.92);
+  box-shadow: 0 14px 28px rgba(31, 41, 51, 0.06);
+}
+.page-nav-history,
+.page-nav-links,
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.nav-button,
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+  font: inherit;
+}
+.nav-button {
+  cursor: pointer;
+}
+.nav-button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 .report-shell {
   width: min(1280px, calc(100% - 32px));
   margin: 0 auto;
@@ -53,14 +103,9 @@ h2 {
   color: var(--muted);
   line-height: 1.6;
 }
-.hero-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
 .hero-actions a,
 .inline-link,
-button {
+button:not(.nav-button) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -73,7 +118,7 @@ button {
   text-decoration: none;
   font-weight: 600;
 }
-button {
+button:not(.nav-button) {
   cursor: pointer;
   background: var(--accent);
   color: #fff;
@@ -220,6 +265,9 @@ td.num { text-align: right; white-space: nowrap; }
   body {
     background: #fff;
   }
+  .page-nav-shell {
+    display: none !important;
+  }
   .report-shell {
     width: 100%;
     padding: 0;
@@ -230,7 +278,7 @@ td.num { text-align: right; white-space: nowrap; }
     break-inside: avoid;
   }
   .hero-actions,
-  button,
+  button:not(.nav-button),
   .inline-link {
     display: none !important;
   }
@@ -248,6 +296,13 @@ td.num { text-align: right; white-space: nowrap; }
   }
 }
 @media (max-width: 700px) {
+  .page-nav {
+    width: min(100% - 20px, 1280px);
+    display: block;
+  }
+  .page-nav-links {
+    margin-top: 10px;
+  }
   .report-shell { width: min(100% - 20px, 1280px); }
   .report-hero { display: block; }
   .hero-actions { margin-top: 14px; }

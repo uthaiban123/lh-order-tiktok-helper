@@ -7,105 +7,114 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div class="shell">
-      <aside class="sidebar">
-        <div class="brand-block">
+    <div class="app-shell">
+      <header class="hero-section" id="overview">
+        <div class="hero-copy">
           <p class="eyebrow">LH Order Helper</p>
-          <h1>TikTok Settled Sales</h1>
-          <p class="brand-copy">
-            หน้าหลักสำหรับ import ข้อมูล, เปิดรายงาน daily/monthly และเช็กสถานะระบบ
-            ในมุมมองเดียว
+          <h1>อัปโหลดไฟล์ TikTok และเปิดรายงานได้จากหน้าเดียว</h1>
+          <p class="hero-text">
+            ลดส่วนที่ไม่จำเป็นออกให้เหลือเฉพาะงานที่ใช้จริง: ตรวจสถานะระบบ, อัปโหลดไฟล์หลัก,
+            และเปิดดูรายงานรายวันหรือรายเดือนทันทีเมื่อข้อมูลพร้อม
           </p>
+
+          <div class="hero-quick-actions">
+            <a class="action-link primary-link" href="#imports">เริ่มอัปโหลดไฟล์</a>
+            <a class="action-link" href="/reports">เปิดหน้ารายงานหลัก</a>
+          </div>
         </div>
 
-        <nav class="menu">
-          <p class="menu-label">เมนู</p>
-          <a class="menu-link" href="#overview">ภาพรวม</a>
-          <a class="menu-link" href="#imports">นำเข้าข้อมูล</a>
-          <a class="menu-link" href="#product-master">แมปสินค้า</a>
-          <a class="menu-link" href="#reports">หน้ารายงาน</a>
-          <a class="menu-link" href="#tools">เครื่องมือสรุปผล</a>
-          <a class="menu-link" href="#system">สถานะระบบ</a>
-          <a class="menu-link" href="#output">ผลลัพธ์ API</a>
-        </nav>
-
-        <section class="sidebar-panel" id="system">
-          <div class="panel-heading">
-            <h2>สถานะระบบ</h2>
-            <span class="status-pill">พร้อมใช้งาน</span>
+        <section class="hero-status-panel" aria-live="polite">
+          <div class="status-row">
+            <span id="system-badge" class="status-pill" data-state="loading">กำลังตรวจสอบระบบ</span>
+            <span id="readiness-badge" class="status-pill" data-state="waiting">รอข้อมูลหลัก</span>
           </div>
-          <p id="health-status" class="status-text">กำลังตรวจสอบการเชื่อมต่อระบบ...</p>
-          <button id="init-db-button" type="button" class="secondary-button">
-            เตรียมฐานข้อมูล
-          </button>
-        </section>
-      </aside>
 
-      <main class="content">
-        <section class="hero-panel" id="overview">
-          <div class="hero-copy">
-            <p class="eyebrow">Dashboard</p>
-            <h2 class="hero-title">หน้าเดียวสำหรับงาน import และออกรายงาน</h2>
-            <p class="hero-text">
-              ออกแบบให้ใช้งานง่าย เน้นลำดับงานที่ชัดเจน: นำเข้าข้อมูลรายวัน, เปิดดูรายงาน,
-              และตรวจผลลัพธ์ที่ API ส่งกลับโดยไม่ต้องไล่หลายหน้า
-            </p>
-          </div>
-          <div class="hero-actions">
-            <a class="action-link primary-link" href="/reports">เปิดหน้ารายงานหลัก</a>
+          <p id="health-status" class="support-copy">กำลังตรวจสอบการเชื่อมต่อระบบ...</p>
+
+          <div class="inline-actions">
+            <button id="init-db-button" type="button" class="secondary-button">
+              เตรียมฐานข้อมูล
+            </button>
             <a class="action-link" href="/reports/daily">รายงานรายวัน</a>
             <a class="action-link" href="/reports/monthly">รายงานรายเดือน</a>
+          </div>
+        </section>
+      </header>
+
+      <main class="workspace">
+        <section class="section-block">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Data Readiness</p>
+              <h2>ความพร้อมของข้อมูล</h2>
+            </div>
+            <p id="next-step-hint" class="section-copy">
+              ต้องมีอย่างน้อย 2 ไฟล์หลักคือ Orders และ Income ก่อนจึงจะสรุปรายงานได้ครบ
+            </p>
+          </div>
+
+          <div class="status-grid">
+            <article class="status-card" id="orders-status-card" data-state="waiting">
+              <div class="status-card-head">
+                <div>
+                  <p class="status-label">Orders</p>
+                  <h3>ไฟล์คำสั่งซื้อ</h3>
+                </div>
+                <span id="orders-status-text" class="status-chip">ยังไม่มีข้อมูล</span>
+              </div>
+              <p class="support-copy">ใช้จับคู่รายการสินค้าและจำนวนที่ขายในแต่ละออเดอร์</p>
+              <strong id="orders-count" class="metric-value">0 แถวสินค้า</strong>
+            </article>
+
+            <article class="status-card" id="income-status-card" data-state="waiting">
+              <div class="status-card-head">
+                <div>
+                  <p class="status-label">Income</p>
+                  <h3>ไฟล์ settlement</h3>
+                </div>
+                <span id="income-status-text" class="status-chip">ยังไม่มีข้อมูล</span>
+              </div>
+              <p class="support-copy">ใช้คำนวณยอดรับจริง, fee, และยอดสรุปรายวันหรือรายเดือน</p>
+              <strong id="income-count" class="metric-value">0 รายการ</strong>
+            </article>
+
+            <article class="status-card" id="product-master-status-card" data-state="optional">
+              <div class="status-card-head">
+                <div>
+                  <p class="status-label">Product Master</p>
+                  <h3>ไฟล์แมปสินค้า</h3>
+                </div>
+                <span id="product-master-status-text" class="status-chip">ไม่บังคับ</span>
+              </div>
+              <p class="support-copy">ช่วยให้ชื่อสินค้าและ seller SKU ตรงขึ้นเวลาสรุปรายงาน</p>
+              <strong id="product-master-count" class="metric-value">0 SKU</strong>
+            </article>
           </div>
         </section>
 
         <section class="section-block" id="imports">
           <div class="section-head">
             <div>
-              <p class="section-kicker">Import</p>
-              <h2>นำเข้าข้อมูล</h2>
+              <p class="section-kicker">Workflow</p>
+              <h2>อัปโหลดไฟล์ตามลำดับ</h2>
             </div>
             <p class="section-copy">
-              แยกการนำเข้าระหว่างไฟล์ order export และ income/settlement เพื่อให้ตรวจสอบได้ง่าย
+              เริ่มจากไฟล์หลัก 2 ตัวก่อน แล้วค่อยอัปโหลด Product Master หากต้องการความแม่นยำเพิ่ม
             </p>
           </div>
 
-          <div class="panel-grid import-grid">
-            <article class="panel" id="product-master">
+          <div class="import-grid">
+            <article class="panel" data-priority="required">
               <div class="panel-heading">
-                <h3>นำเข้า Product Master</h3>
-                <span class="panel-tag">แมปสินค้า</span>
+                <div>
+                  <p class="panel-kicker">Step 1</p>
+                  <h3>นำเข้าไฟล์ Order</h3>
+                </div>
+                <span class="panel-tag">จำเป็น</span>
               </div>
               <p class="panel-copy">
-                ใช้สำหรับแมป <code>product_id</code>, <code>sku_id</code>,
-                <code>seller_sku</code>, variation และ category เพื่อเพิ่มความแม่นของชื่อสินค้า
-              </p>
-              <form id="product-master-import-form" class="stack-form">
-                <label for="product-master-file">ไฟล์ TikTok Batch Edit Template (.xlsx)</label>
-                <input
-                  id="product-master-file"
-                  name="file"
-                  type="file"
-                  accept=".xlsx,.xls"
-                  required
-                />
-                <label for="product-master-uploaded-by">ผู้นำเข้า</label>
-                <input
-                  id="product-master-uploaded-by"
-                  name="uploadedBy"
-                  type="text"
-                  value="web-import"
-                />
-                <button type="submit">นำเข้า Product Master</button>
-              </form>
-            </article>
-
-            <article class="panel">
-              <div class="panel-heading">
-                <h3>นำเข้าไฟล์ Order</h3>
-                <span class="panel-tag">Orders</span>
-              </div>
-              <p class="panel-copy">
-                ใช้สำหรับข้อมูลสินค้า, จำนวนขาย, และ item-level rows ที่จะนำไป join กับ income
+                ไฟล์ Order Export สำหรับข้อมูลสินค้า, จำนวน, และรายการ item-level ที่ใช้จับคู่กับ
+                settlement
               </p>
               <form id="orders-import-form" class="stack-form">
                 <label for="orders-file">ไฟล์ Order Export (.xlsx)</label>
@@ -125,15 +134,19 @@
                 />
                 <button type="submit">นำเข้า Orders</button>
               </form>
+              <p id="orders-last-result" class="form-feedback">ยังไม่มีการนำเข้าในรอบนี้</p>
             </article>
 
-            <article class="panel">
+            <article class="panel" data-priority="required">
               <div class="panel-heading">
-                <h3>นำเข้าไฟล์ Income</h3>
-                <span class="panel-tag">Income</span>
+                <div>
+                  <p class="panel-kicker">Step 2</p>
+                  <h3>นำเข้าไฟล์ Income</h3>
+                </div>
+                <span class="panel-tag">จำเป็น</span>
               </div>
               <p class="panel-copy">
-                ใช้สำหรับ settlement date, รายได้เงินเข้า, fee และข้อมูลที่ใช้สรุปรายวัน/รายเดือน
+                ไฟล์ Income หรือ Settlement สำหรับยอดรับจริง, fee และช่วงวันที่ settlement
               </p>
               <form id="income-import-form" class="stack-form">
                 <label for="income-file">ไฟล์ Income / Settlement (.xlsx)</label>
@@ -153,55 +166,128 @@
                 />
                 <button type="submit">นำเข้า Income</button>
               </form>
+              <p id="income-last-result" class="form-feedback">ยังไม่มีการนำเข้าในรอบนี้</p>
+            </article>
+
+            <article class="panel" data-priority="optional" id="product-master">
+              <div class="panel-heading">
+                <div>
+                  <p class="panel-kicker">Optional</p>
+                  <h3>นำเข้า Product Master</h3>
+                </div>
+                <span class="panel-tag">เสริมความแม่นยำ</span>
+              </div>
+              <p class="panel-copy">
+                ใช้แมป <code>product_id</code>, <code>sku_id</code>, <code>seller_sku</code>,
+                variation และ category เพื่อให้การจับคู่สินค้าแม่นขึ้น
+              </p>
+              <form id="product-master-import-form" class="stack-form">
+                <label for="product-master-file">ไฟล์ TikTok Batch Edit Template (.xlsx)</label>
+                <input
+                  id="product-master-file"
+                  name="file"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  required
+                />
+                <label for="product-master-uploaded-by">ผู้นำเข้า</label>
+                <input
+                  id="product-master-uploaded-by"
+                  name="uploadedBy"
+                  type="text"
+                  value="web-import"
+                />
+                <button type="submit">นำเข้า Product Master</button>
+              </form>
+              <p id="product-master-last-result" class="form-feedback">ยังไม่มีการนำเข้าในรอบนี้</p>
             </article>
           </div>
+        </section>
+
+        <section class="section-block" id="calendar">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Calendar</p>
+              <h2>ตารางข้อมูลรายวัน</h2>
+            </div>
+            <p id="calendar-summary" class="section-copy">
+              เลือกวันจากปฏิทินเพื่อเปิดรายงานรายวันได้ทันที วันที่ที่มีข้อมูลจะถูกเน้นกรอบสีเขียว
+            </p>
+          </div>
+
+          <section class="calendar-shell" aria-labelledby="calendar-month-label">
+            <div class="calendar-toolbar">
+              <div>
+                <p class="panel-kicker">Daily Report Picker</p>
+                <h3 id="calendar-month-label">กำลังโหลดเดือน...</h3>
+              </div>
+              <div class="calendar-actions">
+                <button id="calendar-prev-button" type="button" class="secondary-button">
+                  เดือนก่อน
+                </button>
+                <button id="calendar-today-button" type="button" class="secondary-button">
+                  เดือนนี้
+                </button>
+                <button id="calendar-next-button" type="button" class="secondary-button">
+                  เดือนถัดไป
+                </button>
+              </div>
+            </div>
+
+            <p id="calendar-status" class="support-copy">กำลังโหลดข้อมูลปฏิทิน...</p>
+
+            <div class="calendar-weekdays" aria-hidden="true">
+              <span>อา.</span>
+              <span>จ.</span>
+              <span>อ.</span>
+              <span>พ.</span>
+              <span>พฤ.</span>
+              <span>ศ.</span>
+              <span>ส.</span>
+            </div>
+
+            <div id="calendar-grid" class="calendar-grid" role="grid"></div>
+          </section>
         </section>
 
         <section class="section-block" id="reports">
           <div class="section-head">
             <div>
               <p class="section-kicker">Reports</p>
-              <h2>มุมมองรายงาน</h2>
+              <h2>สรุปผลและเปิดรายงาน</h2>
             </div>
             <p class="section-copy">
-              เปิดหน้า report แบบเป็นทางการเพื่ออ่านข้อมูลสรุปได้ง่ายกว่า JSON output
+              ใช้ฟอร์มด้านล่างเพื่อตรวจข้อมูลผ่าน API หรือกระโดดไปยังหน้า report แบบเต็มได้ทันที
             </p>
           </div>
 
-          <div class="link-grid">
-            <a class="nav-card" href="/reports">
-              <strong>Reports Home</strong>
-              <span>หน้าเลือกดูรายงานรายวันและรายเดือน</span>
-            </a>
-            <a class="nav-card" href="/reports/daily?date=2026-04-09">
-              <strong>รายงานรายวัน</strong>
-              <span>ตัวอย่างมุมมองรายวันสำหรับตัดสต๊อก</span>
-            </a>
-            <a class="nav-card" href="/reports/monthly?month=2026-04">
-              <strong>รายงานรายเดือน</strong>
-              <span>ตัวอย่างมุมมองรายเดือนสำหรับ ERP</span>
-            </a>
-          </div>
-        </section>
-
-        <section class="section-block" id="tools">
-          <div class="section-head">
-            <div>
-              <p class="section-kicker">Tools</p>
-              <h2>Summary Tools</h2>
-            </div>
-            <p class="section-copy">
-              ใช้เรียกดูผลสรุปจาก API ตรง ๆ ก่อนไปดูใน report view หรือใช้ตรวจผลลัพธ์ระหว่างพัฒนา
-            </p>
-          </div>
-
-          <div class="panel-grid">
+          <div class="report-grid">
             <article class="panel">
               <div class="panel-heading">
-                <h3>สรุปรายวัน</h3>
-                <span class="panel-tag">API</span>
+                <div>
+                  <p class="panel-kicker">Quick Access</p>
+                  <h3>หน้ารายงานหลัก</h3>
+                </div>
+                <span class="panel-tag">View</span>
               </div>
-              <form id="daily-form" class="stack-form">
+              <p class="panel-copy">เปิดหน้า report สำหรับดูรายวันและรายเดือนในมุมมองอ่านง่าย</p>
+              <div class="quick-link-group">
+                <a class="action-link primary-link" href="/reports">Reports Home</a>
+                <a class="action-link" href="/reports/daily?date=2026-04-09">รายงานรายวัน</a>
+                <a class="action-link" href="/reports/monthly?month=2026-04">รายงานรายเดือน</a>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="panel-kicker">API</p>
+                  <h3>สรุปรายวัน</h3>
+                </div>
+                <span class="panel-tag">JSON</span>
+              </div>
+              <p class="panel-copy">ใช้ตรวจผลลัพธ์รายวันทันทีจาก API สำหรับวัน settlement ที่ต้องการ</p>
+              <form id="daily-form" class="stack-form compact-form">
                 <label for="daily-date">วันที่ Settlement</label>
                 <input id="daily-date" name="date" type="date" required />
                 <button type="submit">โหลดสรุปรายวัน</button>
@@ -210,10 +296,14 @@
 
             <article class="panel">
               <div class="panel-heading">
-                <h3>สรุปรายเดือน</h3>
-                <span class="panel-tag">API</span>
+                <div>
+                  <p class="panel-kicker">API</p>
+                  <h3>สรุปรายเดือน</h3>
+                </div>
+                <span class="panel-tag">JSON</span>
               </div>
-              <form id="monthly-form" class="stack-form">
+              <p class="panel-copy">ใช้ตรวจผลรวมระดับเดือนก่อนเปิดมุมมองรายงานฉบับเต็ม</p>
+              <form id="monthly-form" class="stack-form compact-form">
                 <label for="monthly-month">เดือน Settlement</label>
                 <input id="monthly-month" name="month" type="month" required />
                 <button type="submit">โหลดสรุปรายเดือน</button>
@@ -223,27 +313,21 @@
         </section>
 
         <section class="section-block" id="output">
-          <div class="section-head">
-            <div>
-              <p class="section-kicker">Debug</p>
-              <h2>API Output</h2>
-            </div>
-            <p class="section-copy">
-              ใช้ดูผลลัพธ์ดิบจาก API หลัง import หรือหลังเรียก summary tools
-            </p>
-          </div>
-
-          <section class="panel output-panel">
-              <div class="panel-heading">
-              <h3>ผลลัพธ์ JSON</h3>
-              <span class="panel-tag">Output</span>
-            </div>
+          <details class="output-shell" open>
+            <summary>
+              <div>
+                <p class="section-kicker">Debug</p>
+                <h2>ผลลัพธ์ล่าสุดจาก API</h2>
+              </div>
+              <span class="summary-hint">ใช้ตรวจ response หลังอัปโหลดหรือสรุปข้อมูล</span>
+            </summary>
             <pre id="output">รอการทำงาน...</pre>
-          </section>
+          </details>
         </section>
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/app.js"></script>
   </body>
 </html>
