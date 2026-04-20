@@ -336,7 +336,7 @@ function buildProductSummaries({
     const adjustmentSkuKey = "__tiktok_system_adjustment__";
     skuSummaryMap.set(adjustmentSkuKey, {
       sellerSku: "",
-      productName: "TikTok system adjustment / refund",
+      productName: "รายการปรับปรุงจากระบบ / คืนเงิน",
       baseProductCode: "",
       packMultiplier: 1,
       ordersSet: new Set(),
@@ -352,7 +352,7 @@ function buildProductSummaries({
 
     baseProductSummaryMap.set(adjustmentSkuKey, {
       baseProductCode: "",
-      productName: "TikTok system adjustment / refund",
+      productName: "รายการปรับปรุงจากระบบ / คืนเงิน",
       ordersSet: new Set(),
       soldUnitsTikTok: 0,
       equivalentBaseUnits: 0,
@@ -787,7 +787,8 @@ async function buildSummary({ settlementDate, month }) {
         ? [
             {
               type: "zero_income_revenue_orders",
-              message: `พบ ${revenueMismatchDetails.zeroRevenueCount} ออเดอร์ที่ฝั่ง Orders ยังมีสินค้า แต่ Income revenue = 0 ซึ่งมักเกิดจากคืนเงินเต็มออเดอร์ ยอด Orders subtotal ที่ได้รับผลกระทบ ${roundMoney(
+              title: "ออเดอร์ที่ไม่มียอดรายได้รับรู้",
+              message: `พบ ${revenueMismatchDetails.zeroRevenueCount} ออเดอร์ที่ไฟล์ Order ยังมีรายการสินค้า แต่ไฟล์ Income ไม่มียอดรายได้รับรู้ ซึ่งมักเกิดจากคืนเงินเต็มออเดอร์ ยอดจากไฟล์ Order ที่ได้รับผลกระทบ ${roundMoney(
                 revenueMismatchDetails.zeroRevenueTotalRawOrderItemAmount
               )} บาท`,
             },
@@ -797,13 +798,14 @@ async function buildSummary({ settlementDate, month }) {
         ? [
             {
               type: "missing_order_items",
-              message: `Found ${missingOrderItemDetails.length} settled orders without order item rows. Their revenue and settlement are included in TikTok system adjustment / refund so grand totals still reconcile.`,
+              title: "ไม่พบรายการสินค้าในบางออเดอร์",
+              message: `พบ ${missingOrderItemDetails.length} ออเดอร์ที่มีข้อมูลรับชำระแล้ว แต่ยังไม่พบรายการสินค้าในไฟล์ Order ระบบจึงนำยอดรายได้และยอดรับจริงไปรวมไว้ในรายการปรับปรุงจากระบบ เพื่อให้ยอดรวมยังตรงกับรายงานการเงิน`,
               columns: [
-                { key: "orderId", label: "Order ID" },
-                { key: "entryTypes", label: "Type" },
-                { key: "orderAmount", label: "Order Amount", format: "money" },
-                { key: "totalRevenue", label: "Revenue", format: "money" },
-                { key: "totalSettlementAmount", label: "Settlement", format: "money" },
+                { key: "orderId", label: "เลขที่ออเดอร์" },
+                { key: "entryTypes", label: "ประเภทรายการ" },
+                { key: "orderAmount", label: "ยอดออเดอร์", format: "money" },
+                { key: "totalRevenue", label: "รายได้", format: "money" },
+                { key: "totalSettlementAmount", label: "ยอดรับจริง", format: "money" },
               ],
               details: buildWarningDetails(missingOrderItemDetails),
             },
@@ -813,15 +815,16 @@ async function buildSummary({ settlementDate, month }) {
         ? [
             {
               type: "missing_seller_sku",
-              message: `Found ${unresolvedSellerSkuDetails.length} order item rows that are still missing seller SKU after product master matching.`,
+              title: "พบสินค้าที่ยังไม่ระบุ Seller SKU",
+              message: `พบ ${unresolvedSellerSkuDetails.length} รายการสินค้าที่ยังไม่สามารถระบุ Seller SKU ได้ แม้จะพยายามจับคู่กับ Product Master แล้ว`,
               columns: [
-                { key: "orderId", label: "Order ID" },
-                { key: "productName", label: "Product" },
-                { key: "variation", label: "Variation" },
-                { key: "qty", label: "Qty", format: "number" },
+                { key: "orderId", label: "เลขที่ออเดอร์" },
+                { key: "productName", label: "สินค้า" },
+                { key: "variation", label: "รูปแบบสินค้า" },
+                { key: "qty", label: "จำนวน", format: "number" },
                 {
                   key: "itemSubtotalAfterDiscount",
-                  label: "Amount",
+                  label: "ยอดสินค้า",
                   format: "money",
                 },
               ],
@@ -831,14 +834,15 @@ async function buildSummary({ settlementDate, month }) {
         : []),
       ...duplicateSellerSkuWarnings.map((row) => ({
         type: "duplicate_product_master_seller_sku",
-        message: `Product master has duplicate seller SKU mapping for ${row.sellerSku}.`,
+        title: "Seller SKU ซ้ำใน Product Master",
+        message: `พบการแมป Seller SKU ซ้ำใน Product Master สำหรับรหัส ${row.sellerSku}`,
         sellerSku: row.sellerSku,
         columns: [
           { key: "sellerSku", label: "Seller SKU" },
-          { key: "productName", label: "Product" },
-          { key: "variationValue", label: "Variation" },
-          { key: "category", label: "Category" },
-          { key: "duplicateSellerSkuCount", label: "Duplicate Rows", format: "number" },
+          { key: "productName", label: "สินค้า" },
+          { key: "variationValue", label: "รูปแบบสินค้า" },
+          { key: "category", label: "หมวดสินค้า" },
+          { key: "duplicateSellerSkuCount", label: "จำนวนแถวซ้ำ", format: "number" },
         ],
         details: buildWarningDetails([
           {

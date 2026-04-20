@@ -27,7 +27,7 @@
       <strong><%= formatPercent(summary.sourceStats.coveragePercent) %></strong>
     </article>
     <article class="stat-card">
-      <span class="stat-label">ยอด Settlement</span>
+      <span class="stat-label">ยอดรับจริง</span>
       <strong><%= formatMoney(summary.financeSummary.totalSettlementAmount) %></strong>
     </article>
   </section>
@@ -36,7 +36,7 @@
     <h2>สรุปการเงิน</h2>
     <div class="key-value-grid">
       <div><span>รายได้รวม</span><strong><%= formatMoney(summary.financeSummary.totalRevenue) %></strong></div>
-      <div><span>ยอด Settlement รวม</span><strong><%= formatMoney(summary.financeSummary.totalSettlementAmount) %></strong></div>
+      <div><span>ยอดรับจริงรวม</span><strong><%= formatMoney(summary.financeSummary.totalSettlementAmount) %></strong></div>
       <div><span>ค่าธรรมเนียมรวม</span><strong><%= formatMoney(summary.financeSummary.totalFees) %></strong></div>
       <div><span>ค่าส่งที่ผู้ขายรับผิดชอบ</span><strong><%= formatMoney(summary.financeSummary.sellerShippingFee) %></strong></div>
       <div><span>ค่า Affiliate Commission</span><strong><%= formatMoney(summary.financeSummary.affiliateCommission) %></strong></div>
@@ -45,26 +45,26 @@
   </section>
 
   <section class="panel">
-    <h2>เทียบยอด Revenue และยอดรับจริง</h2>
+    <h2>เทียบยอดรายได้และยอดรับจริง</h2>
     <div class="key-value-grid">
       <div>
-        <span>Revenue จากสินค้า</span>
+        <span>รายได้รวมระดับสินค้า</span>
         <strong><%= formatMoney(summary.reconciliation.revenue.productTotal) %></strong>
       </div>
       <div>
-        <span>Revenue รวมจาก Income</span>
+        <span>รายได้รวมจากไฟล์ Income</span>
         <strong><%= formatMoney(summary.reconciliation.revenue.financeTotal) %></strong>
       </div>
       <div>
-        <span>ส่วนต่าง Revenue</span>
+        <span>ส่วนต่างรายได้</span>
         <strong><%= formatMoney(summary.reconciliation.revenue.difference) %></strong>
       </div>
       <div>
-        <span>Orders subtotal (raw)</span>
+        <span>ยอดรวมจากไฟล์ Order</span>
         <strong><%= formatMoney(summary.reconciliation.rawOrders.productTotal) %></strong>
       </div>
       <div>
-        <span>ส่วนต่าง Orders vs Income</span>
+        <span>ส่วนต่าง Order เทียบ Income</span>
         <strong><%= formatMoney(summary.reconciliation.rawOrders.difference) %></strong>
       </div>
       <div>
@@ -72,7 +72,7 @@
         <strong><%= formatMoney(summary.reconciliation.settlement.productTotal) %></strong>
       </div>
       <div>
-        <span>Settlement รวมจาก Income</span>
+        <span>ยอดรับจริงรวมจากไฟล์ Income</span>
         <strong><%= formatMoney(summary.reconciliation.settlement.financeTotal) %></strong>
       </div>
       <div>
@@ -81,7 +81,7 @@
       </div>
     </div>
     <p class="muted">
-      Revenue หลักของรายงานมาจาก Income ที่ allocate ลงสินค้า ส่วน Orders subtotal ใช้ไว้ตรวจสอบความต่างกับไฟล์ Order
+      รายได้หลักของรายงานอ้างอิงจากไฟล์ Income แล้วกระจายลงตามสินค้า ส่วนยอดจากไฟล์ Order ใช้สำหรับตรวจสอบความต่างของข้อมูล
     </p>
   </section>
 
@@ -91,20 +91,20 @@
       <span><%= formatNumber(summary.skuSummary.length) %> รายการ</span>
     </div>
     <p class="muted">
-      ใช้ Revenue base ตามระบบเดิม โดยราคาเฉลี่ย = ยอดรวมสินค้า / จำนวนขาย และคงยอดรับจริงไว้สำหรับเทียบ reconciliation
+      ตารางนี้ใช้รายได้ตามระบบหลัก โดยราคาเฉลี่ยคำนวณจากยอดรวมรายได้หารด้วยจำนวนขาย และยังแสดงยอดรับจริงเพื่อใช้ตรวจสอบควบคู่กัน
     </p>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Seller SKU</th>
+            <th>รหัส Seller SKU</th>
             <th>ชื่อสินค้า</th>
             <th>จำนวนออเดอร์</th>
             <th>จำนวนขาย</th>
-            <th>Multiple</th>
+            <th>ตัวคูณ</th>
             <th>หน่วยฐาน</th>
             <th>ราคาเฉลี่ย</th>
-            <th>ยอดรวม Revenue</th>
+            <th>ยอดรวมรายได้</th>
             <th>ยอดรับจริง</th>
           </tr>
         </thead>
@@ -128,7 +128,7 @@
         </tbody>
         <tfoot>
           <tr>
-            <th colspan="5">Grand Total</th>
+            <th colspan="5">รวมทั้งหมด</th>
             <th class="num"><%= formatNumber(summary.totals.skuSummary.equivalentBaseUnits) %></th>
             <th class="num">-</th>
             <th class="num"><%= formatMoney(summary.totals.skuSummary.amount) %></th>
@@ -148,7 +148,7 @@
         <% summary.warnings.forEach((warning) => { %>
           <li>
             <div class="warning-title">
-              <strong><%= warning.type %></strong>
+              <strong><%= warning.title || warning.type %></strong>
               <span><%= warning.message %></span>
             </div>
             <% if (warning.details && warning.details.rows.length > 0) { %>

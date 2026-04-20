@@ -26,7 +26,7 @@
       <strong><%= formatPercent(summary.sourceStats.coveragePercent) %></strong>
     </article>
     <article class="stat-card">
-      <span class="stat-label">ยอด Settlement</span>
+      <span class="stat-label">ยอดรับจริง</span>
       <strong><%= formatMoney(summary.financeSummary.totalSettlementAmount) %></strong>
     </article>
   </section>
@@ -35,35 +35,35 @@
     <h2>สรุปการเงิน</h2>
     <div class="key-value-grid">
       <div><span>รายได้รวม</span><strong><%= formatMoney(summary.financeSummary.totalRevenue) %></strong></div>
-      <div><span>ยอด Settlement รวม</span><strong><%= formatMoney(summary.financeSummary.totalSettlementAmount) %></strong></div>
+      <div><span>ยอดรับจริงรวม</span><strong><%= formatMoney(summary.financeSummary.totalSettlementAmount) %></strong></div>
       <div><span>ค่าธรรมเนียมรวม</span><strong><%= formatMoney(summary.financeSummary.totalFees) %></strong></div>
-      <div><span>ค่า Transaction Fee</span><strong><%= formatMoney(summary.financeSummary.transactionFee) %></strong></div>
-      <div><span>ค่า TikTok Commission</span><strong><%= formatMoney(summary.financeSummary.tiktokShopCommissionFee) %></strong></div>
+      <div><span>ค่าธรรมเนียมธุรกรรม</span><strong><%= formatMoney(summary.financeSummary.transactionFee) %></strong></div>
+      <div><span>ค่าคอมมิชชั่น TikTok</span><strong><%= formatMoney(summary.financeSummary.tiktokShopCommissionFee) %></strong></div>
       <div><span>ยอดถอนเงิน</span><strong><%= formatMoney(summary.withdrawalSummary.withdrawalAmount) %></strong></div>
     </div>
   </section>
 
   <section class="panel">
-    <h2>เทียบยอด Revenue และยอดรับจริง</h2>
+    <h2>เทียบยอดรายได้และยอดรับจริง</h2>
     <div class="key-value-grid">
       <div>
-        <span>Revenue จากสินค้า</span>
+        <span>รายได้รวมระดับสินค้า</span>
         <strong><%= formatMoney(summary.reconciliation.revenue.productTotal) %></strong>
       </div>
       <div>
-        <span>Revenue รวมจาก Income</span>
+        <span>รายได้รวมจากไฟล์ Income</span>
         <strong><%= formatMoney(summary.reconciliation.revenue.financeTotal) %></strong>
       </div>
       <div>
-        <span>ส่วนต่าง Revenue</span>
+        <span>ส่วนต่างรายได้</span>
         <strong><%= formatMoney(summary.reconciliation.revenue.difference) %></strong>
       </div>
       <div>
-        <span>Orders subtotal (raw)</span>
+        <span>ยอดรวมจากไฟล์ Order</span>
         <strong><%= formatMoney(summary.reconciliation.rawOrders.productTotal) %></strong>
       </div>
       <div>
-        <span>ส่วนต่าง Orders vs Income</span>
+        <span>ส่วนต่าง Order เทียบ Income</span>
         <strong><%= formatMoney(summary.reconciliation.rawOrders.difference) %></strong>
       </div>
       <div>
@@ -71,7 +71,7 @@
         <strong><%= formatMoney(summary.reconciliation.settlement.productTotal) %></strong>
       </div>
       <div>
-        <span>Settlement รวมจาก Income</span>
+        <span>ยอดรับจริงรวมจากไฟล์ Income</span>
         <strong><%= formatMoney(summary.reconciliation.settlement.financeTotal) %></strong>
       </div>
       <div>
@@ -80,7 +80,7 @@
       </div>
     </div>
     <p class="muted">
-      Revenue หลักของรายงานมาจาก Income ที่ allocate ลงสินค้า ส่วน Orders subtotal ใช้ไว้ตรวจสอบความต่างกับไฟล์ Order
+      รายได้หลักของรายงานอ้างอิงจากไฟล์ Income แล้วกระจายลงตามสินค้า ส่วนยอดจากไฟล์ Order ใช้สำหรับตรวจสอบความต่างของข้อมูล
     </p>
   </section>
 
@@ -90,7 +90,7 @@
       <span>ยอดรวมระดับ base product สำหรับลงบัญชี</span>
     </div>
     <p class="muted">
-      ใช้ตารางนี้เป็นตัวสรุปหลักสำหรับรวมยอดกรอก ERP แบบ Revenue base และราคาเฉลี่ย = ยอดรวมสินค้า / จำนวนขาย
+      ใช้ตารางนี้เป็นสรุปหลักสำหรับลง ERP โดยราคาเฉลี่ยคำนวณจากยอดรวมรายได้หารด้วยจำนวนขาย
     </p>
     <div class="table-wrap">
       <table>
@@ -100,7 +100,7 @@
             <th>จำนวนขาย</th>
             <th>หน่วยฐาน</th>
             <th>ราคาเฉลี่ย</th>
-            <th>ยอดรวม Revenue</th>
+            <th>ยอดรวมรายได้</th>
             <th>ยอดรับจริง</th>
           </tr>
         </thead>
@@ -121,7 +121,7 @@
         </tbody>
         <tfoot>
           <tr>
-            <th colspan="2">Grand Total</th>
+            <th colspan="2">รวมทั้งหมด</th>
             <th class="num"><%= formatNumber(summary.totals.baseProductSummary.equivalentBaseUnits) %></th>
             <th class="num">-</th>
             <th class="num"><%= formatMoney(summary.totals.baseProductSummary.amount) %></th>
@@ -134,7 +134,7 @@
 
   <section class="panel">
     <div class="panel-head">
-      <h2>สรุปตาม Base Product</h2>
+      <h2>สรุปตามรหัสสินค้าฐาน</h2>
       <span><%= formatNumber(summary.baseProductSummary.length) %> รายการ</span>
     </div>
     <div class="table-wrap">
@@ -146,7 +146,7 @@
             <th>จำนวนขาย</th>
             <th>หน่วยฐาน</th>
             <th>ราคาเฉลี่ย</th>
-            <th>ยอดรวม Revenue</th>
+            <th>ยอดรวมรายได้</th>
             <th>ยอดรับจริง</th>
           </tr>
         </thead>
@@ -168,7 +168,7 @@
         </tbody>
         <tfoot>
           <tr>
-            <th colspan="3">Grand Total</th>
+            <th colspan="3">รวมทั้งหมด</th>
             <th class="num"><%= formatNumber(summary.totals.baseProductSummary.equivalentBaseUnits) %></th>
             <th class="num">-</th>
             <th class="num"><%= formatMoney(summary.totals.baseProductSummary.amount) %></th>
@@ -188,7 +188,7 @@
         <% summary.warnings.forEach((warning) => { %>
           <li>
             <div class="warning-title">
-              <strong><%= warning.type %></strong>
+              <strong><%= warning.title || warning.type %></strong>
               <span><%= warning.message %></span>
             </div>
             <% if (warning.details && warning.details.rows.length > 0) { %>
