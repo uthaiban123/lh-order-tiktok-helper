@@ -44,12 +44,53 @@
   </section>
 
   <section class="panel">
+    <h2>เทียบยอด Revenue และยอดรับจริง</h2>
+    <div class="key-value-grid">
+      <div>
+        <span>Revenue จากสินค้า</span>
+        <strong><%= formatMoney(summary.reconciliation.revenue.productTotal) %></strong>
+      </div>
+      <div>
+        <span>Revenue รวมจาก Income</span>
+        <strong><%= formatMoney(summary.reconciliation.revenue.financeTotal) %></strong>
+      </div>
+      <div>
+        <span>ส่วนต่าง Revenue</span>
+        <strong><%= formatMoney(summary.reconciliation.revenue.difference) %></strong>
+      </div>
+      <div>
+        <span>Orders subtotal (raw)</span>
+        <strong><%= formatMoney(summary.reconciliation.rawOrders.productTotal) %></strong>
+      </div>
+      <div>
+        <span>ส่วนต่าง Orders vs Income</span>
+        <strong><%= formatMoney(summary.reconciliation.rawOrders.difference) %></strong>
+      </div>
+      <div>
+        <span>ยอดรับจริงจากสินค้า</span>
+        <strong><%= formatMoney(summary.reconciliation.settlement.productTotal) %></strong>
+      </div>
+      <div>
+        <span>Settlement รวมจาก Income</span>
+        <strong><%= formatMoney(summary.reconciliation.settlement.financeTotal) %></strong>
+      </div>
+      <div>
+        <span>ส่วนต่างยอดรับจริง</span>
+        <strong><%= formatMoney(summary.reconciliation.settlement.difference) %></strong>
+      </div>
+    </div>
+    <p class="muted">
+      Revenue หลักของรายงานมาจาก Income ที่ allocate ลงสินค้า ส่วน Orders subtotal ใช้ไว้ตรวจสอบความต่างกับไฟล์ Order
+    </p>
+  </section>
+
+  <section class="panel">
     <div class="panel-head">
       <h2>สรุปสำหรับ ERP</h2>
       <span>ยอดรวมระดับ base product สำหรับลงบัญชี</span>
     </div>
     <p class="muted">
-      ใช้ตารางนี้เป็นตัวสรุปหลักสำหรับรวมยอดกรอก ERP โดยเงินรับจริงจะถูกเฉลี่ยจาก Settlement ต่อออเดอร์ตามสัดส่วนยอดสินค้าเดิม
+      ใช้ตารางนี้เป็นตัวสรุปหลักสำหรับรวมยอดกรอก ERP แบบ Revenue base และราคาเฉลี่ย = ยอดรวมสินค้า / จำนวนขาย
     </p>
     <div class="table-wrap">
       <table>
@@ -58,35 +99,33 @@
             <th>ชื่อสินค้า</th>
             <th>จำนวนขาย</th>
             <th>หน่วยฐาน</th>
-            <th>เงินรับจริง/หน่วย</th>
-            <th>เงินรับจริง</th>
+            <th>ราคาเฉลี่ย</th>
+            <th>ยอดรวม Revenue</th>
+            <th>ยอดรับจริง</th>
           </tr>
         </thead>
         <tbody>
           <% if (summary.baseProductSummary.length === 0) { %>
-            <tr><td colspan="5" class="empty-cell">ไม่มีข้อมูล</td></tr>
+            <tr><td colspan="6" class="empty-cell">ไม่มีข้อมูล</td></tr>
           <% } %>
           <% summary.baseProductSummary.forEach((row) => { %>
             <tr>
               <td><%= row.productName %></td>
               <td class="num"><%= formatNumber(row.soldUnitsTikTok) %></td>
               <td class="num"><%= formatNumber(row.equivalentBaseUnits) %></td>
-              <td class="num"><%= row.soldUnitsTikTok > 0 ? formatMoney(row.receivedSettlementAmount / row.soldUnitsTikTok) : "-" %></td>
+              <td class="num"><%= row.soldUnitsTikTok > 0 ? formatMoney(row.allocatedRevenueAmount / row.soldUnitsTikTok) : "-" %></td>
+              <td class="num"><%= formatMoney(row.allocatedRevenueAmount) %></td>
               <td class="num"><%= formatMoney(row.receivedSettlementAmount) %></td>
             </tr>
           <% }) %>
         </tbody>
         <tfoot>
           <tr>
-            <th>Grand Total</th>
-            <th class="num"><%= formatNumber(summary.totals.baseProductSummary.soldUnitsTikTok) %></th>
+            <th colspan="2">Grand Total</th>
             <th class="num"><%= formatNumber(summary.totals.baseProductSummary.equivalentBaseUnits) %></th>
-            <th class="num">
-              <%= summary.totals.baseProductSummary.soldUnitsTikTok > 0
-                ? formatMoney(summary.totals.baseProductSummary.unitPriceAverage)
-                : "-" %>
-            </th>
+            <th class="num">-</th>
             <th class="num"><%= formatMoney(summary.totals.baseProductSummary.amount) %></th>
+            <th class="num"><%= formatMoney(summary.totals.settlement.baseProductSummary.amount) %></th>
           </tr>
         </tfoot>
       </table>
@@ -106,13 +145,14 @@
             <th>จำนวนออเดอร์</th>
             <th>จำนวนขาย</th>
             <th>หน่วยฐาน</th>
-            <th>เงินรับจริง/หน่วย</th>
-            <th>เงินรับจริง</th>
+            <th>ราคาเฉลี่ย</th>
+            <th>ยอดรวม Revenue</th>
+            <th>ยอดรับจริง</th>
           </tr>
         </thead>
         <tbody>
           <% if (summary.baseProductSummary.length === 0) { %>
-            <tr><td colspan="6" class="empty-cell">ไม่มีข้อมูล</td></tr>
+            <tr><td colspan="7" class="empty-cell">ไม่มีข้อมูล</td></tr>
           <% } %>
           <% summary.baseProductSummary.forEach((row) => { %>
             <tr>
@@ -120,19 +160,19 @@
               <td class="num"><%= formatNumber(row.ordersCount) %></td>
               <td class="num"><%= formatNumber(row.soldUnitsTikTok) %></td>
               <td class="num"><%= formatNumber(row.equivalentBaseUnits) %></td>
-              <td class="num"><%= row.soldUnitsTikTok > 0 ? formatMoney(row.receivedSettlementAmount / row.soldUnitsTikTok) : "-" %></td>
+              <td class="num"><%= row.soldUnitsTikTok > 0 ? formatMoney(row.allocatedRevenueAmount / row.soldUnitsTikTok) : "-" %></td>
+              <td class="num"><%= formatMoney(row.allocatedRevenueAmount) %></td>
               <td class="num"><%= formatMoney(row.receivedSettlementAmount) %></td>
             </tr>
           <% }) %>
         </tbody>
         <tfoot>
           <tr>
-            <th>Grand Total</th>
-            <th class="num"><%= formatNumber(summary.totals.baseProductSummary.ordersCount) %></th>
-            <th class="num"><%= formatNumber(summary.totals.baseProductSummary.soldUnitsTikTok) %></th>
+            <th colspan="3">Grand Total</th>
             <th class="num"><%= formatNumber(summary.totals.baseProductSummary.equivalentBaseUnits) %></th>
-            <th class="num"><%= summary.totals.baseProductSummary.soldUnitsTikTok > 0 ? formatMoney(summary.totals.baseProductSummary.unitPriceAverage) : "-" %></th>
+            <th class="num">-</th>
             <th class="num"><%= formatMoney(summary.totals.baseProductSummary.amount) %></th>
+            <th class="num"><%= formatMoney(summary.totals.settlement.baseProductSummary.amount) %></th>
           </tr>
         </tfoot>
       </table>

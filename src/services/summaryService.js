@@ -2,6 +2,7 @@ const IncomeEntry = require("../models/IncomeEntry");
 const OrderItem = require("../models/OrderItem");
 const OrderHeader = require("../models/OrderHeader");
 const ProductMaster = require("../models/ProductMaster");
+const { parseSellerSku } = require("../utils/sku");
 
 const MAX_WARNING_DETAILS = 50;
 
@@ -78,7 +79,7 @@ function buildFinanceProjectStage() {
 
 function buildSummaryTotals(rows, options = {}) {
   const includeOrdersCount = options.includeOrdersCount !== false;
-  const amountKey = options.amountKey || "grossItemAmount";
+  const amountKey = options.amountKey || "allocatedRevenueAmount";
   const totals = rows.reduce(
     (accumulator, row) => {
       accumulator.soldUnitsTikTok += Number(row.soldUnitsTikTok || 0);
@@ -118,6 +119,10 @@ function buildWarningDetails(details) {
 
 function roundMoney(value) {
   return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+}
+
+function isMoneyMatched(value) {
+  return Math.abs(Number(value || 0)) < 0.005;
 }
 
 function allocateRoundedAmounts(totalAmount, basisValues) {
@@ -174,8 +179,18 @@ function summarizeOrderItems(orderItems, productMasters) {
     const effectiveMapping = sellerSkuMapping || nameVariationMapping || null;
     const effectiveSellerSku = rawSellerSku || effectiveMapping?.sellerSku || "";
     const effectiveProductName = effectiveMapping?.productName || item.productName;
+    const normalizedSku = parseSellerSku(effectiveSellerSku);
     const skuKey = `${effectiveSellerSku}|||${effectiveProductName}`;
-    const baseProductCode = String(item.baseProductCode || "").trim();
+    const baseProductCode = String(
+      !rawSellerSku && normalizedSku.baseProductCode
+        ? normalizedSku.baseProductCode
+        : item.baseProductCode || normalizedSku.baseProductCode || ""
+    ).trim();
+    const packMultiplier = Number(
+      !rawSellerSku && normalizedSku.baseProductCode
+        ? normalizedSku.packMultiplier
+        : item.packMultiplier || normalizedSku.packMultiplier || 1
+    );
     const baseKey = baseProductCode || effectiveProductName;
 
     if (!rawSellerSku) {
@@ -192,7 +207,7 @@ function summarizeOrderItems(orderItems, productMasters) {
       productName: effectiveProductName,
       variation: item.variation,
       baseProductCode,
-      packMultiplier: item.packMultiplier,
+      packMultiplier,
       qty: item.qty,
       itemSubtotalAfterDiscount: item.itemSubtotalAfterDiscount,
       skuKey,
@@ -223,6 +238,7 @@ function summarizeOrderItems(orderItems, productMasters) {
 function buildProductSummaries({
   enrichedItems,
   incomeByOrderId,
+  missingOrderItemRevenueAmount,
   missingOrderItemAdjustmentAmount,
   missingOrderItemOrdersCount,
 }) {
@@ -240,6 +256,7 @@ function buildProductSummaries({
 
   for (const [orderId, items] of itemsByOrderId.entries()) {
     const incomeRow = incomeByOrderId.get(orderId);
+    const revenueAmount = Number(incomeRow?.totalRevenue || 0);
     const settlementAmount = Number(incomeRow?.totalSettlementAmount || 0);
     const subtotalBasis = items.map((item) => Math.max(Number(item.itemSubtotalAfterDiscount || 0), 0));
     const totalSubtotalBasis = subtotalBasis.reduce((sum, value) => sum + value, 0);
@@ -254,9 +271,11 @@ function buildProductSummaries({
           ? qtyBasis
           : fallbackBasis;
 
+    const allocatedRevenueAmounts = allocateRoundedAmounts(revenueAmount, allocationBasis);
     const allocatedAmounts = allocateRoundedAmounts(settlementAmount, allocationBasis);
 
     items.forEach((item, index) => {
+      const allocatedRevenueAmount = allocatedRevenueAmounts[index] || 0;
       const receivedSettlementAmount = allocatedAmounts[index] || 0;
 
       if (!skuSummaryMap.has(item.skuKey)) {
@@ -268,7 +287,8 @@ function buildProductSummaries({
           ordersSet: new Set(),
           soldUnitsTikTok: 0,
           equivalentBaseUnits: 0,
-          grossItemAmount: 0,
+          rawOrderItemAmount: 0,
+          allocatedRevenueAmount: 0,
           receivedSettlementAmount: 0,
           mappedSkuId: item.mappedSkuId,
           mappedProductId: item.mappedProductId,
@@ -282,7 +302,8 @@ function buildProductSummaries({
       skuSummaryRow.ordersSet.add(item.orderId);
       skuSummaryRow.soldUnitsTikTok += Number(item.qty || 0);
       skuSummaryRow.equivalentBaseUnits += Number(item.qty || 0) * Number(item.packMultiplier || 1);
-      skuSummaryRow.grossItemAmount += Number(item.itemSubtotalAfterDiscount || 0);
+      skuSummaryRow.rawOrderItemAmount += Number(item.itemSubtotalAfterDiscount || 0);
+      skuSummaryRow.allocatedRevenueAmount += allocatedRevenueAmount;
       skuSummaryRow.receivedSettlementAmount += receivedSettlementAmount;
 
       if (!baseProductSummaryMap.has(item.baseKey)) {
@@ -292,7 +313,8 @@ function buildProductSummaries({
           ordersSet: new Set(),
           soldUnitsTikTok: 0,
           equivalentBaseUnits: 0,
-          grossItemAmount: 0,
+          rawOrderItemAmount: 0,
+          allocatedRevenueAmount: 0,
           receivedSettlementAmount: 0,
         });
       }
@@ -301,12 +323,16 @@ function buildProductSummaries({
       baseSummaryRow.ordersSet.add(item.orderId);
       baseSummaryRow.soldUnitsTikTok += Number(item.qty || 0);
       baseSummaryRow.equivalentBaseUnits += Number(item.qty || 0) * Number(item.packMultiplier || 1);
-      baseSummaryRow.grossItemAmount += Number(item.itemSubtotalAfterDiscount || 0);
+      baseSummaryRow.rawOrderItemAmount += Number(item.itemSubtotalAfterDiscount || 0);
+      baseSummaryRow.allocatedRevenueAmount += allocatedRevenueAmount;
       baseSummaryRow.receivedSettlementAmount += receivedSettlementAmount;
     });
   }
 
-  if (Math.abs(Number(missingOrderItemAdjustmentAmount || 0)) > 0.000001) {
+  if (
+    Math.abs(Number(missingOrderItemAdjustmentAmount || 0)) > 0.000001 ||
+    Math.abs(Number(missingOrderItemRevenueAmount || 0)) > 0.000001
+  ) {
     const adjustmentSkuKey = "__tiktok_system_adjustment__";
     skuSummaryMap.set(adjustmentSkuKey, {
       sellerSku: "",
@@ -316,7 +342,8 @@ function buildProductSummaries({
       ordersSet: new Set(),
       soldUnitsTikTok: 0,
       equivalentBaseUnits: 0,
-      grossItemAmount: 0,
+      rawOrderItemAmount: 0,
+      allocatedRevenueAmount: Number(missingOrderItemRevenueAmount || 0),
       receivedSettlementAmount: Number(missingOrderItemAdjustmentAmount || 0),
       mappingSource: "unmapped_income_adjustment",
       isAdjustmentRow: true,
@@ -329,7 +356,8 @@ function buildProductSummaries({
       ordersSet: new Set(),
       soldUnitsTikTok: 0,
       equivalentBaseUnits: 0,
-      grossItemAmount: 0,
+      rawOrderItemAmount: 0,
+      allocatedRevenueAmount: Number(missingOrderItemRevenueAmount || 0),
       receivedSettlementAmount: Number(missingOrderItemAdjustmentAmount || 0),
       isAdjustmentRow: true,
       ordersCountOverride: Number(missingOrderItemOrdersCount || 0),
@@ -343,10 +371,16 @@ function buildProductSummaries({
         typeof row.ordersCountOverride === "number"
           ? row.ordersCountOverride
           : row.ordersSet.size,
+      rawOrderItemAmount: roundMoney(row.rawOrderItemAmount),
+      allocatedRevenueAmount: roundMoney(row.allocatedRevenueAmount),
       receivedSettlementAmount: roundMoney(row.receivedSettlementAmount),
-      grossItemAmount: roundMoney(row.grossItemAmount),
+      grossItemAmount: roundMoney(row.allocatedRevenueAmount),
     }))
     .sort((left, right) => {
+      if (right.allocatedRevenueAmount !== left.allocatedRevenueAmount) {
+        return right.allocatedRevenueAmount - left.allocatedRevenueAmount;
+      }
+
       if (right.receivedSettlementAmount !== left.receivedSettlementAmount) {
         return right.receivedSettlementAmount - left.receivedSettlementAmount;
       }
@@ -361,10 +395,16 @@ function buildProductSummaries({
         typeof row.ordersCountOverride === "number"
           ? row.ordersCountOverride
           : row.ordersSet.size,
+      rawOrderItemAmount: roundMoney(row.rawOrderItemAmount),
+      allocatedRevenueAmount: roundMoney(row.allocatedRevenueAmount),
       receivedSettlementAmount: roundMoney(row.receivedSettlementAmount),
-      grossItemAmount: roundMoney(row.grossItemAmount),
+      grossItemAmount: roundMoney(row.allocatedRevenueAmount),
     }))
     .sort((left, right) => {
+      if (right.allocatedRevenueAmount !== left.allocatedRevenueAmount) {
+        return right.allocatedRevenueAmount - left.allocatedRevenueAmount;
+      }
+
       if (right.receivedSettlementAmount !== left.receivedSettlementAmount) {
         return right.receivedSettlementAmount - left.receivedSettlementAmount;
       }
@@ -375,6 +415,62 @@ function buildProductSummaries({
   return {
     skuSummary,
     baseProductSummary,
+  };
+}
+
+function buildRevenueMismatchDetails({
+  enrichedItems,
+  incomeByOrderId,
+  orderHeaderByOrderId,
+}) {
+  const itemRevenueByOrderId = enrichedItems.reduce((map, item) => {
+    map.set(
+      item.orderId,
+      (map.get(item.orderId) || 0) + Number(item.itemSubtotalAfterDiscount || 0)
+    );
+    return map;
+  }, new Map());
+
+  const rows = [...itemRevenueByOrderId.entries()]
+    .map(([orderId, rawOrderItemAmount]) => {
+      const incomeRow = incomeByOrderId.get(orderId);
+      const orderHeader = orderHeaderByOrderId.get(orderId);
+      const totalRevenue = Number(incomeRow?.totalRevenue || 0);
+      const revenueDifference = roundMoney(totalRevenue - rawOrderItemAmount);
+
+      return {
+        orderId,
+        entryTypes: incomeRow?.entryTypes ? [...incomeRow.entryTypes].join(", ") : "Order",
+        orderAmount: Number(orderHeader?.orderAmount || 0),
+        rawOrderItemAmount: roundMoney(rawOrderItemAmount),
+        totalRevenue: roundMoney(totalRevenue),
+        revenueDifference,
+        totalSettlementAmount: roundMoney(incomeRow?.totalSettlementAmount || 0),
+      };
+    })
+    .filter((row) => !isMoneyMatched(row.revenueDifference))
+    .sort((left, right) => Math.abs(right.revenueDifference) - Math.abs(left.revenueDifference));
+
+  const totals = rows.reduce(
+    (accumulator, row) => {
+      accumulator.rawOrderItemAmount += Number(row.rawOrderItemAmount || 0);
+      accumulator.totalRevenue += Number(row.totalRevenue || 0);
+      accumulator.revenueDifference += Number(row.revenueDifference || 0);
+      return accumulator;
+    },
+    {
+      rawOrderItemAmount: 0,
+      totalRevenue: 0,
+      revenueDifference: 0,
+    }
+  );
+
+  return {
+    count: rows.length,
+    totalRawOrderItemAmount: roundMoney(totals.rawOrderItemAmount),
+    totalRevenue: roundMoney(totals.totalRevenue),
+    totalDifference: roundMoney(totals.revenueDifference),
+    rows,
   };
 }
 
@@ -528,6 +624,10 @@ async function buildSummary({ settlementDate, month }) {
     (sum, row) => sum + Number(row.totalSettlementAmount || 0),
     0
   );
+  const missingOrderItemRevenueAmount = missingOrderItemDetails.reduce(
+    (sum, row) => sum + Number(row.totalRevenue || 0),
+    0
+  );
 
   const {
     skuSummary,
@@ -535,9 +635,54 @@ async function buildSummary({ settlementDate, month }) {
   } = buildProductSummaries({
     enrichedItems,
     incomeByOrderId,
+    missingOrderItemRevenueAmount,
     missingOrderItemAdjustmentAmount,
     missingOrderItemOrdersCount: missingOrderItemDetails.length,
   });
+  const revenueMismatchDetails = buildRevenueMismatchDetails({
+    enrichedItems,
+    incomeByOrderId,
+    orderHeaderByOrderId,
+  });
+
+  const skuRevenueTotals = buildSummaryTotals(skuSummary);
+  const baseRevenueTotals = buildSummaryTotals(baseProductSummary);
+  const skuRawOrderTotals = buildSummaryTotals(skuSummary, {
+    amountKey: "rawOrderItemAmount",
+  });
+  const baseRawOrderTotals = buildSummaryTotals(baseProductSummary, {
+    amountKey: "rawOrderItemAmount",
+  });
+  const skuSettlementTotals = buildSummaryTotals(skuSummary, {
+    amountKey: "receivedSettlementAmount",
+  });
+  const baseSettlementTotals = buildSummaryTotals(baseProductSummary, {
+    amountKey: "receivedSettlementAmount",
+  });
+
+  const reconciliation = {
+    revenue: {
+      productTotal: roundMoney(skuRevenueTotals.amount),
+      financeTotal: roundMoney(financeSummary.totalRevenue || 0),
+      difference: roundMoney(skuRevenueTotals.amount - Number(financeSummary.totalRevenue || 0)),
+    },
+    rawOrders: {
+      productTotal: roundMoney(skuRawOrderTotals.amount),
+      financeTotal: roundMoney(financeSummary.totalRevenue || 0),
+      difference: roundMoney(skuRawOrderTotals.amount - Number(financeSummary.totalRevenue || 0)),
+    },
+    settlement: {
+      productTotal: roundMoney(skuSettlementTotals.amount),
+      financeTotal: roundMoney(financeSummary.totalSettlementAmount || 0),
+      difference: roundMoney(
+        skuSettlementTotals.amount - Number(financeSummary.totalSettlementAmount || 0)
+      ),
+    },
+  };
+
+  reconciliation.revenue.isMatched = isMoneyMatched(reconciliation.revenue.difference);
+  reconciliation.rawOrders.isMatched = isMoneyMatched(reconciliation.rawOrders.difference);
+  reconciliation.settlement.isMatched = isMoneyMatched(reconciliation.settlement.difference);
 
   const unresolvedSellerSkuDetails = enrichedItems
     .filter((item) => !String(item.sellerSku || "").trim())
@@ -569,15 +714,50 @@ async function buildSummary({ settlementDate, month }) {
     skuSummary,
     baseProductSummary,
     totals: {
-      skuSummary: buildSummaryTotals(skuSummary, { amountKey: "receivedSettlementAmount" }),
-      baseProductSummary: buildSummaryTotals(baseProductSummary, { amountKey: "receivedSettlementAmount" }),
+      skuSummary: skuRevenueTotals,
+      baseProductSummary: baseRevenueTotals,
+      rawOrders: {
+        skuSummary: skuRawOrderTotals,
+        baseProductSummary: baseRawOrderTotals,
+      },
+      settlement: {
+        skuSummary: skuSettlementTotals,
+        baseProductSummary: baseSettlementTotals,
+      },
+    },
+    reconciliation,
+    diagnostics: {
+      revenueMismatchOrders: {
+        count: revenueMismatchDetails.count,
+        totalRawOrderItemAmount: revenueMismatchDetails.totalRawOrderItemAmount,
+        totalRevenue: revenueMismatchDetails.totalRevenue,
+        totalDifference: revenueMismatchDetails.totalDifference,
+      },
     },
     warnings: [
+      ...(revenueMismatchDetails.count
+        ? [
+            {
+              type: "revenue_order_item_gap",
+              message: `Found ${revenueMismatchDetails.count} matched orders where order item subtotal differs from income revenue. Revenue summary uses allocated income revenue so totals still reconcile.`,
+              columns: [
+                { key: "orderId", label: "Order ID" },
+                { key: "entryTypes", label: "Type" },
+                { key: "orderAmount", label: "Order Amount", format: "money" },
+                { key: "rawOrderItemAmount", label: "Orders Subtotal", format: "money" },
+                { key: "totalRevenue", label: "Income Revenue", format: "money" },
+                { key: "revenueDifference", label: "Difference", format: "money" },
+                { key: "totalSettlementAmount", label: "Settlement", format: "money" },
+              ],
+              details: buildWarningDetails(revenueMismatchDetails.rows),
+            },
+          ]
+        : []),
       ...(missingOrderItemDetails.length
         ? [
             {
               type: "missing_order_items",
-              message: `Found ${missingOrderItemDetails.length} settled orders without order item rows. Their settlement amount is included in TikTok system adjustment / refund so the grand total still matches settlement.`,
+              message: `Found ${missingOrderItemDetails.length} settled orders without order item rows. Their revenue and settlement are included in TikTok system adjustment / refund so grand totals still reconcile.`,
               columns: [
                 { key: "orderId", label: "Order ID" },
                 { key: "entryTypes", label: "Type" },

@@ -37,7 +37,14 @@ async function connectMongo() {
   await initializeCollections();
 }
 
+async function disconnectMongo() {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+}
+
 module.exports = {
   connectMongo,
+  disconnectMongo,
   initializeCollections,
 };
