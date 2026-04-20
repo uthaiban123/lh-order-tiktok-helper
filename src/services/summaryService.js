@@ -465,12 +465,51 @@ function buildRevenueMismatchDetails({
     }
   );
 
+  const zeroRevenueRows = rows.filter(
+    (row) =>
+      isMoneyMatched(row.totalRevenue) &&
+      Number(row.rawOrderItemAmount || 0) > 0
+  );
+  const positiveIncomeGapRows = rows.filter(
+    (row) => Number(row.totalRevenue || 0) > Number(row.rawOrderItemAmount || 0)
+  );
+
+  const zeroRevenueTotals = zeroRevenueRows.reduce(
+    (accumulator, row) => {
+      accumulator.rawOrderItemAmount += Number(row.rawOrderItemAmount || 0);
+      return accumulator;
+    },
+    { rawOrderItemAmount: 0 }
+  );
+
+  const positiveIncomeGapTotals = positiveIncomeGapRows.reduce(
+    (accumulator, row) => {
+      accumulator.rawOrderItemAmount += Number(row.rawOrderItemAmount || 0);
+      accumulator.totalRevenue += Number(row.totalRevenue || 0);
+      accumulator.revenueDifference += Number(row.revenueDifference || 0);
+      return accumulator;
+    },
+    {
+      rawOrderItemAmount: 0,
+      totalRevenue: 0,
+      revenueDifference: 0,
+    }
+  );
+
   return {
     count: rows.length,
     totalRawOrderItemAmount: roundMoney(totals.rawOrderItemAmount),
     totalRevenue: roundMoney(totals.totalRevenue),
     totalDifference: roundMoney(totals.revenueDifference),
     rows,
+    zeroRevenueRows,
+    zeroRevenueCount: zeroRevenueRows.length,
+    zeroRevenueTotalRawOrderItemAmount: roundMoney(zeroRevenueTotals.rawOrderItemAmount),
+    positiveIncomeGapRows,
+    positiveIncomeGapCount: positiveIncomeGapRows.length,
+    positiveIncomeGapTotalRawOrderItemAmount: roundMoney(positiveIncomeGapTotals.rawOrderItemAmount),
+    positiveIncomeGapTotalRevenue: roundMoney(positiveIncomeGapTotals.totalRevenue),
+    positiveIncomeGapTotalDifference: roundMoney(positiveIncomeGapTotals.revenueDifference),
   };
 }
 
@@ -732,24 +771,25 @@ async function buildSummary({ settlementDate, month }) {
         totalRawOrderItemAmount: revenueMismatchDetails.totalRawOrderItemAmount,
         totalRevenue: revenueMismatchDetails.totalRevenue,
         totalDifference: revenueMismatchDetails.totalDifference,
+        zeroRevenueCount: revenueMismatchDetails.zeroRevenueCount,
+        zeroRevenueTotalRawOrderItemAmount:
+          revenueMismatchDetails.zeroRevenueTotalRawOrderItemAmount,
+        positiveIncomeGapCount: revenueMismatchDetails.positiveIncomeGapCount,
+        positiveIncomeGapTotalRawOrderItemAmount:
+          revenueMismatchDetails.positiveIncomeGapTotalRawOrderItemAmount,
+        positiveIncomeGapTotalRevenue: revenueMismatchDetails.positiveIncomeGapTotalRevenue,
+        positiveIncomeGapTotalDifference:
+          revenueMismatchDetails.positiveIncomeGapTotalDifference,
       },
     },
     warnings: [
-      ...(revenueMismatchDetails.count
+      ...(revenueMismatchDetails.zeroRevenueCount
         ? [
             {
-              type: "revenue_order_item_gap",
-              message: `Found ${revenueMismatchDetails.count} matched orders where order item subtotal differs from income revenue. Revenue summary uses allocated income revenue so totals still reconcile.`,
-              columns: [
-                { key: "orderId", label: "Order ID" },
-                { key: "entryTypes", label: "Type" },
-                { key: "orderAmount", label: "Order Amount", format: "money" },
-                { key: "rawOrderItemAmount", label: "Orders Subtotal", format: "money" },
-                { key: "totalRevenue", label: "Income Revenue", format: "money" },
-                { key: "revenueDifference", label: "Difference", format: "money" },
-                { key: "totalSettlementAmount", label: "Settlement", format: "money" },
-              ],
-              details: buildWarningDetails(revenueMismatchDetails.rows),
+              type: "zero_income_revenue_orders",
+              message: `พบ ${revenueMismatchDetails.zeroRevenueCount} ออเดอร์ที่ฝั่ง Orders ยังมีสินค้า แต่ Income revenue = 0 ซึ่งมักเกิดจากคืนเงินเต็มออเดอร์ ยอด Orders subtotal ที่ได้รับผลกระทบ ${roundMoney(
+                revenueMismatchDetails.zeroRevenueTotalRawOrderItemAmount
+              )} บาท`,
             },
           ]
         : []),
