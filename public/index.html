@@ -92,6 +92,106 @@
           </div>
         </section>
 
+        <section class="section-block" id="today-workflow">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Today Workflow</p>
+              <h2>งานวันนี้</h2>
+            </div>
+            <p id="today-workflow-summary" class="section-copy">
+              กำลังตรวจสอบว่าวันนี้มี settlement เข้าระบบแล้วหรือยัง และยังขาดอะไรต่อก่อนเปิดรายงาน
+            </p>
+          </div>
+
+          <div class="ops-overview">
+            <article class="ops-highlight">
+              <div class="status-row">
+                <span id="today-workflow-badge" class="status-pill" data-state="loading">
+                  กำลังตรวจสอบงานวันนี้
+                </span>
+              </div>
+              <h3 id="today-workflow-title">กำลังโหลดข้อมูลของวันนี้...</h3>
+              <p id="today-workflow-copy" class="support-copy">
+                ระบบกำลังสรุปว่าวันนี้มีข้อมูล settlement, coverage และ warning อะไรที่ต้องตามต่อ
+              </p>
+
+              <div class="quick-link-group">
+                <a id="today-report-link" class="action-link primary-link" href="/reports/daily">
+                  เปิดรายงานวันนี้
+                </a>
+                <a class="action-link" href="#imports">ไปอัปโหลดไฟล์</a>
+              </div>
+            </article>
+
+            <div class="ops-metric-grid">
+              <article class="ops-metric-card">
+                <p class="status-label">Settled Orders</p>
+                <strong id="today-settled-orders" class="metric-value">-</strong>
+                <p class="support-copy">ออเดอร์ที่ settle ตามวันที่วันนี้</p>
+              </article>
+
+              <article class="ops-metric-card">
+                <p class="status-label">Coverage</p>
+                <strong id="today-coverage" class="metric-value">-</strong>
+                <p class="support-copy">เปอร์เซ็นต์ออเดอร์ที่จับคู่รายการสินค้าได้</p>
+              </article>
+
+              <article class="ops-metric-card">
+                <p class="status-label">Warnings</p>
+                <strong id="today-warning-count" class="metric-value">-</strong>
+                <p class="support-copy">จำนวนกลุ่ม warning ที่ควรเปิดเช็กต่อ</p>
+              </article>
+
+              <article class="ops-metric-card">
+                <p class="status-label">Imports Today</p>
+                <strong id="today-import-count" class="metric-value">-</strong>
+                <p class="support-copy">จำนวนไฟล์ที่ถูกอัปโหลดเข้าระบบวันนี้</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="report-grid workflow-grid">
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="panel-kicker">Next Step</p>
+                  <h3>สิ่งที่ต้องทำต่อ</h3>
+                </div>
+                <span class="panel-tag">Action</span>
+              </div>
+              <div id="today-next-steps" class="todo-list">
+                <p class="support-copy">กำลังโหลดรายการงานที่เหลือ...</p>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="panel-kicker">Warnings</p>
+                  <h3>สิ่งที่ควรตรวจต่อวันนี้</h3>
+                </div>
+                <span class="panel-tag">Check</span>
+              </div>
+              <div id="today-warning-list" class="todo-list">
+                <p class="support-copy">กำลังโหลด warning ของวันนี้...</p>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="panel-kicker">Recent Imports</p>
+                  <h3>ประวัติอัปโหลดล่าสุด</h3>
+                </div>
+                <span class="panel-tag">Log</span>
+              </div>
+              <div id="recent-import-list" class="todo-list">
+                <p class="support-copy">กำลังโหลดประวัติการนำเข้า...</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <section class="section-block" id="imports">
           <div class="section-head">
             <div>

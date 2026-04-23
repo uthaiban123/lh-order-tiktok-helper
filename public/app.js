@@ -19,8 +19,31 @@ const calendarGrid = document.getElementById("calendar-grid");
 const calendarPrevButton = document.getElementById("calendar-prev-button");
 const calendarNextButton = document.getElementById("calendar-next-button");
 const calendarTodayButton = document.getElementById("calendar-today-button");
+const todayWorkflowSummary = document.getElementById("today-workflow-summary");
+const todayWorkflowBadge = document.getElementById("today-workflow-badge");
+const todayWorkflowTitle = document.getElementById("today-workflow-title");
+const todayWorkflowCopy = document.getElementById("today-workflow-copy");
+const todayReportLink = document.getElementById("today-report-link");
+const todaySettledOrders = document.getElementById("today-settled-orders");
+const todayCoverage = document.getElementById("today-coverage");
+const todayWarningCount = document.getElementById("today-warning-count");
+const todayImportCount = document.getElementById("today-import-count");
+const todayNextSteps = document.getElementById("today-next-steps");
+const todayWarningList = document.getElementById("today-warning-list");
+const recentImportList = document.getElementById("recent-import-list");
 
 const numberFormatter = new Intl.NumberFormat("th-TH");
+const percentFormatter = new Intl.NumberFormat("th-TH", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+const dateTimeFormatter = new Intl.DateTimeFormat("th-TH", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+const dateFormatter = new Intl.DateTimeFormat("th-TH", {
+  dateStyle: "medium",
+});
 let lastHealthCounts = null;
 let calendarMonth = "";
 let calendarDataByDate = new Map();
@@ -83,12 +106,64 @@ function formatNumber(value) {
   return numberFormatter.format(Number(value || 0));
 }
 
+function formatPercent(value) {
+  return `${percentFormatter.format(Number(value || 0))}%`;
+}
+
+function getDateParts(date = new Date()) {
+  return {
+    year: date.getFullYear(),
+    month: String(date.getMonth() + 1).padStart(2, "0"),
+    day: String(date.getDate()).padStart(2, "0"),
+  };
+}
+
 function getTodayIso() {
-  return new Date().toISOString().slice(0, 10);
+  const { year, month, day } = getDateParts();
+  return `${year}-${month}-${day}`;
 }
 
 function getCurrentMonthValue() {
   return getTodayIso().slice(0, 7);
+}
+
+function formatIsoDate(value) {
+  const [year, month, day] = String(value || "").split("-");
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+
+  if (!year || !month || !day || Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return dateFormatter.format(date);
+}
+
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return dateTimeFormatter.format(date);
+}
+
+function formatShortDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return dateFormatter.format(date);
+}
+
+function isSameLocalDate(value, isoDate) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const { year, month, day } = getDateParts(date);
+  return `${year}-${month}-${day}` === isoDate;
 }
 
 function formatMonthLabel(month) {
@@ -287,6 +362,10 @@ function showConfirmNotice({ title, html, confirmButtonText }) {
 }
 
 function setBusyState(form, isBusy, busyLabel) {
+  if (!form) {
+    return;
+  }
+
   const button = form.querySelector('button[type="submit"]');
   if (!button) {
     return;
@@ -298,6 +377,17 @@ function setBusyState(form, isBusy, busyLabel) {
 
   button.disabled = isBusy;
   button.textContent = isBusy ? busyLabel : button.dataset.defaultLabel;
+}
+
+function resetFileInput(form) {
+  if (!form) {
+    return;
+  }
+
+  const input = form.querySelector('input[type="file"]');
+  if (input) {
+    input.value = "";
+  }
 }
 
 function updateImportFeedback(kind, data) {
@@ -380,6 +470,263 @@ function buildImportNotice(kind, data, counts, becameReady, options = {}) {
     title,
     html: `<ul>${items.join("")}</ul>`,
   };
+}
+
+function getBatchTypeLabel(batchType) {
+  return (
+    {
+      orders: "Orders",
+      income: "Income",
+      product_master: "Product Master",
+    }[batchType] || batchType || "-"
+  );
+}
+
+function buildDashboardItem({
+  title,
+  description,
+  meta,
+  actionHref,
+  actionLabel,
+  tone = "warn",
+  extraHtml = "",
+}) {
+  return `
+    <article class="todo-item" data-tone="${escapeHtml(tone)}">
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(description)}</p>
+      ${meta ? `<span>${escapeHtml(meta)}</span>` : ""}
+      ${extraHtml}
+      ${
+        actionHref && actionLabel
+          ? `<a class="todo-item-action" href="${escapeHtml(actionHref)}">${escapeHtml(actionLabel)}</a>`
+          : ""
+      }
+    </article>
+  `;
+}
+
+function renderTodayWorkflowDashboard({
+  today,
+  dailySummary,
+  availableDates,
+  batches,
+  partialFailures = [],
+}) {
+  const warnings = Array.isArray(dailySummary?.warnings) ? dailySummary.warnings : [];
+  const sourceStats = dailySummary?.sourceStats || {};
+  const readiness = getReadiness(lastHealthCounts);
+  const settledOrders = Number(
+    sourceStats.settledOrders || dailySummary?.financeSummary?.settledOrders || 0
+  );
+  const coveragePercent = Number(sourceStats.coveragePercent || 0);
+  const importsTodayCount = batches.filter((item) => isSameLocalDate(item.createdAt, today)).length;
+  const latestSettlementDate = availableDates.length
+    ? availableDates[availableDates.length - 1].date
+    : "";
+  const missingOrderItemOrders = Number(sourceStats.missingOrderItemOrders || 0);
+  const unresolvedSellerSkuItemRows = Number(sourceStats.unresolvedSellerSkuItemRows || 0);
+
+  todayReportLink.href = `/reports/daily?date=${encodeURIComponent(today)}`;
+  todayReportLink.textContent = settledOrders > 0 ? "เปิดรายงานวันนี้" : "เปิดรายงานของวันนี้";
+
+  todaySettledOrders.textContent = formatNumber(settledOrders);
+  todayCoverage.textContent = formatPercent(coveragePercent);
+  todayWarningCount.textContent = formatNumber(warnings.length);
+  todayImportCount.textContent = formatNumber(importsTodayCount);
+
+  if (settledOrders === 0) {
+    setChipState(todayWorkflowBadge, "waiting", "รอ settlement วันนี้");
+    todayWorkflowTitle.textContent = "วันนี้ยังไม่มีข้อมูล settlement ในระบบ";
+    todayWorkflowCopy.textContent = latestSettlementDate
+      ? `ข้อมูล settlement ล่าสุดของเดือนนี้คือ ${formatIsoDate(latestSettlementDate)} ถ้าวันนี้มีไฟล์ใหม่ ให้อัปโหลด Income ก่อนเปิดรายงาน`
+      : "ยังไม่พบข้อมูล settlement ในเดือนนี้ ถ้ามีไฟล์ Income ของวันนี้ ให้อัปโหลดก่อนเพื่อเริ่มสรุปรายงาน";
+  } else if (missingOrderItemOrders > 0 || warnings.length > 0) {
+    setChipState(todayWorkflowBadge, "loading", "มีงานที่ต้องตรวจต่อ");
+    todayWorkflowTitle.textContent = "วันนี้มีข้อมูลแล้ว แต่ยังควรเช็กก่อนปิดงาน";
+    todayWorkflowCopy.textContent =
+      `มี ${formatNumber(settledOrders)} ออเดอร์ที่ settle วันนี้ ` +
+      `Coverage ${formatPercent(coveragePercent)} และ warning ${formatNumber(warnings.length)} กลุ่ม`;
+  } else {
+    setChipState(todayWorkflowBadge, "ready", "พร้อมเปิดรายงาน");
+    todayWorkflowTitle.textContent = "งานวันนี้พร้อมเปิดรายงาน";
+    todayWorkflowCopy.textContent =
+      `วันนี้มี ${formatNumber(settledOrders)} ออเดอร์ที่ settle ` +
+      `และจับคู่สินค้าได้ครบ Coverage ${formatPercent(coveragePercent)}`;
+  }
+
+  todayWorkflowSummary.textContent = partialFailures.length
+    ? `โหลด dashboard ได้บางส่วน แต่ยังมีข้อมูลบางชุดที่ดึงไม่สำเร็จ: ${partialFailures.join(", ")}`
+    : `สรุปจากวันที่ ${formatIsoDate(today)} เพื่อบอกว่าพร้อมเปิดรายงานแล้วหรือยัง และยังมีจุดไหนต้องตามต่อ`;
+
+  const nextStepItems = [];
+
+  if (!readiness.hasOrders) {
+    nextStepItems.push(
+      buildDashboardItem({
+        title: "ยังไม่มีข้อมูล Orders ในระบบ",
+        description: "อัปโหลดไฟล์ Order Export ก่อน เพื่อให้ระบบจับคู่สินค้าและจำนวนขายได้",
+        actionHref: "#imports",
+        actionLabel: "ไปอัปโหลด Orders",
+      })
+    );
+  }
+
+  if (settledOrders === 0) {
+    nextStepItems.push(
+      buildDashboardItem({
+        title: "วันนี้ยังไม่มี Income / Settlement",
+        description: "ถ้ามีไฟล์ของวันนี้ ให้อัปโหลด Income เพื่อให้รายงานรายวันเริ่มมีข้อมูล",
+        meta: `วันที่ตรวจ: ${formatIsoDate(today)}`,
+        actionHref: "#imports",
+        actionLabel: "ไปอัปโหลด Income",
+      })
+    );
+  }
+
+  if (missingOrderItemOrders > 0) {
+    nextStepItems.push(
+      buildDashboardItem({
+        title: "มีออเดอร์ที่ settle แล้ว แต่ยังไม่เจอรายการสินค้า",
+        description: `พบ ${formatNumber(missingOrderItemOrders)} ออเดอร์ที่ยังไม่พบ item rows ในไฟล์ Orders`,
+        meta: "ควรตามไฟล์ Order เพิ่มหรือเปิดรายงานเพื่อตรวจรายการที่ขาด",
+        actionHref: `/reports/daily?date=${encodeURIComponent(today)}`,
+        actionLabel: "เปิดรายงานวันนี้",
+        tone: "error",
+      })
+    );
+  }
+
+  if (unresolvedSellerSkuItemRows > 0) {
+    nextStepItems.push(
+      buildDashboardItem({
+        title: "มีสินค้าที่หา Seller SKU ไม่เจอ",
+        description: `พบ ${formatNumber(unresolvedSellerSkuItemRows)} แถวที่ยังระบุ Seller SKU ไม่ได้`,
+        meta: "อัปโหลด Product Master เพิ่มจะช่วยให้การแมปสินค้าแม่นขึ้น",
+        actionHref: "#product-master",
+        actionLabel: "ไปอัปโหลด Product Master",
+      })
+    );
+  }
+
+  if (!nextStepItems.length) {
+    nextStepItems.push(
+      buildDashboardItem({
+        title: "ไม่มีงานค้างใน flow หลัก",
+        description: "ข้อมูลหลักพร้อมแล้ว สามารถเปิดรายงานวันนี้หรือตรวจรายงานรายเดือนได้ทันที",
+        actionHref: `/reports/daily?date=${encodeURIComponent(today)}`,
+        actionLabel: "เปิดรายงานวันนี้",
+        tone: "good",
+      })
+    );
+  }
+
+  todayNextSteps.innerHTML = nextStepItems.join("");
+
+  if (warnings.length > 0) {
+    todayWarningList.innerHTML = warnings
+      .slice(0, 3)
+      .map((warning) =>
+        buildDashboardItem({
+          title: warning.title || "พบ warning",
+          description: warning.message || "มีข้อมูลบางส่วนที่ควรตรวจต่อ",
+          meta: warning.details?.totalCount
+            ? `รายละเอียด ${formatNumber(warning.details.totalCount)} รายการ`
+            : "เปิดรายงานรายวันเพื่อดูรายละเอียด",
+          actionHref: `/reports/daily?date=${encodeURIComponent(today)}`,
+          actionLabel: "ดูในรายงานวันนี้",
+          tone: warning.type === "missing_order_items" ? "error" : "warn",
+        })
+      )
+      .join("");
+  } else {
+    todayWarningList.innerHTML = buildDashboardItem({
+      title: settledOrders > 0 ? "วันนี้ยังไม่พบ warning สำคัญ" : "ยังไม่มี warning สำหรับวันนี้",
+      description:
+        settledOrders > 0
+          ? "ถ้าต้องการตรวจซ้ำ สามารถเปิดรายงานวันนี้เพื่อดู summary รายละเอียดได้"
+          : "เมื่อมี settlement เข้ามา ระบบจะสรุป warning ที่ต้องตามต่อให้ในส่วนนี้",
+      actionHref: `/reports/daily?date=${encodeURIComponent(today)}`,
+      actionLabel: "เปิดรายงานวันนี้",
+      tone: "good",
+    });
+  }
+
+  if (batches.length > 0) {
+    recentImportList.innerHTML = batches
+      .slice(0, 5)
+      .map(
+        (batch) => `
+          <article class="import-log-item">
+            <strong>${escapeHtml(batch.filename || "-")}</strong>
+            <span>${escapeHtml(formatShortDate(batch.createdAt))}</span>
+          </article>
+        `
+      )
+      .join("");
+  } else {
+    recentImportList.innerHTML = '<p class="support-copy">ยังไม่มีประวัติการอัปโหลดในระบบ</p>';
+  }
+}
+
+function setTodayWorkflowError(message) {
+  setChipState(todayWorkflowBadge, "error", "โหลดงานวันนี้ไม่สำเร็จ");
+  todayWorkflowTitle.textContent = "ยังสรุปงานวันนี้ไม่ได้";
+  todayWorkflowCopy.textContent = message;
+  todayWorkflowSummary.textContent = "ลองรีโหลดหน้าอีกครั้ง หรือเช็กการเชื่อมต่อระบบก่อนอัปโหลด";
+  todaySettledOrders.textContent = "-";
+  todayCoverage.textContent = "-";
+  todayWarningCount.textContent = "-";
+  todayImportCount.textContent = "-";
+  todayNextSteps.innerHTML = `<p class="support-copy">${escapeHtml(message)}</p>`;
+  todayWarningList.innerHTML = '<p class="support-copy">ยังโหลด warning ไม่ได้</p>';
+  recentImportList.innerHTML = '<p class="support-copy">ยังโหลดประวัติการอัปโหลดไม่ได้</p>';
+}
+
+async function loadTodayWorkflowDashboard() {
+  const today = getTodayIso();
+  const month = today.slice(0, 7);
+
+  setChipState(todayWorkflowBadge, "loading", "กำลังตรวจสอบงานวันนี้");
+  todayWorkflowTitle.textContent = "กำลังโหลดข้อมูลของวันนี้...";
+  todayWorkflowCopy.textContent = "ระบบกำลังสรุป settlement, warning, และประวัติการอัปโหลดล่าสุด";
+  todayWorkflowSummary.textContent =
+    "กำลังดึงข้อมูลจากรายงานรายวัน, ปฏิทิน และประวัติการนำเข้า";
+
+  const [dailyResult, datesResult, batchesResult] = await Promise.allSettled([
+    fetchJson(`/api/tiktok-settled-sales/daily-summary?date=${encodeURIComponent(today)}`),
+    fetchJson(`/api/tiktok-settled-sales/available-dates?month=${encodeURIComponent(month)}`),
+    fetchJson("/api/tiktok-settled-sales/batches"),
+  ]);
+
+  const partialFailures = [];
+  const dailySummary = dailyResult.status === "fulfilled" ? dailyResult.value : null;
+  const availableDates = datesResult.status === "fulfilled" ? datesResult.value.items || [] : [];
+  const batches = batchesResult.status === "fulfilled" ? batchesResult.value.items || [] : [];
+
+  if (dailyResult.status !== "fulfilled") {
+    partialFailures.push("daily summary");
+  }
+
+  if (datesResult.status !== "fulfilled") {
+    partialFailures.push("calendar");
+  }
+
+  if (batchesResult.status !== "fulfilled") {
+    partialFailures.push("recent imports");
+  }
+
+  if (!dailySummary && !availableDates.length && !batches.length) {
+    throw new Error("ไม่สามารถโหลด dashboard งานวันนี้ได้");
+  }
+
+  renderTodayWorkflowDashboard({
+    today,
+    dailySummary: dailySummary || {},
+    availableDates,
+    batches,
+    partialFailures,
+  });
 }
 
 function getCalendarMatrix(month) {
@@ -483,12 +830,13 @@ async function loadCalendar(month) {
 
 async function handleImportSubmit({ event, kind, url, busyLabel }) {
   event.preventDefault();
+  const form = event.currentTarget;
   const previousReadiness = getReadiness(lastHealthCounts);
 
-  setBusyState(event.currentTarget, true, busyLabel);
+  setBusyState(form, true, busyLabel);
 
   try {
-    const data = await postForm(url, event.currentTarget);
+    const data = await postForm(url, form);
     renderJson(data);
     updateImportFeedback(kind, data);
     let counts = lastHealthCounts;
@@ -499,6 +847,13 @@ async function handleImportSubmit({ event, kind, url, busyLabel }) {
     } catch (healthError) {
       healthUnavailable = true;
     }
+
+    await Promise.allSettled([
+      loadTodayWorkflowDashboard(),
+      loadCalendar(calendarMonth || getCurrentMonthValue()),
+    ]);
+
+    resetFileInput(form);
 
     const nextReadiness = getReadiness(counts);
 
@@ -519,7 +874,7 @@ async function handleImportSubmit({ event, kind, url, busyLabel }) {
       html: `<p>${escapeHtml(error.message)}</p>`,
     });
   } finally {
-    setBusyState(event.currentTarget, false, busyLabel);
+    setBusyState(form, false, busyLabel);
   }
 }
 
@@ -537,6 +892,10 @@ initDbButton.addEventListener("click", async () => {
 
     renderJson(payload);
     await loadHealth();
+    await Promise.allSettled([
+      loadTodayWorkflowDashboard(),
+      loadCalendar(calendarMonth || getCurrentMonthValue()),
+    ]);
     await showNotice({
       icon: "success",
       title: "เตรียมฐานข้อมูลแล้ว",
@@ -659,5 +1018,11 @@ calendarGrid.addEventListener("click", async (event) => {
 });
 
 setDefaultPeriods();
-loadHealth().catch(() => undefined);
+loadHealth()
+  .catch(() => undefined)
+  .finally(() => {
+    loadTodayWorkflowDashboard().catch((error) => {
+      setTodayWorkflowError(`โหลด dashboard งานวันนี้ไม่สำเร็จ: ${error.message}`);
+    });
+  });
 loadCalendar(getCurrentMonthValue());

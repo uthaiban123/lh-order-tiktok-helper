@@ -280,6 +280,135 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.ops-overview,
+.ops-metric-grid,
+.todo-list {
+  display: grid;
+  gap: 16px;
+}
+
+.ops-overview {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+}
+
+.ops-highlight,
+.ops-metric-card {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.ops-highlight {
+  display: grid;
+  gap: 14px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(228, 240, 235, 0.92)),
+    var(--surface);
+}
+
+.ops-highlight h3,
+.ops-metric-card strong {
+  margin: 0;
+}
+
+.ops-metric-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ops-metric-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 148px;
+}
+
+.workflow-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.todo-list {
+  align-content: start;
+}
+
+.todo-item,
+.import-log-item {
+  display: grid;
+  gap: 6px;
+  padding: 14px 0;
+  border-top: 1px solid rgba(24, 33, 38, 0.08);
+}
+
+.todo-item:first-child,
+.import-log-item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.todo-item strong,
+.import-log-item strong {
+  font-size: 0.98rem;
+}
+
+.import-log-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-item p,
+.todo-item span,
+.import-log-item p,
+.import-log-item span {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.todo-item-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.todo-item[data-tone="good"] strong {
+  color: var(--success);
+}
+
+.todo-item[data-tone="warn"] strong {
+  color: var(--warning);
+}
+
+.todo-item[data-tone="error"] strong {
+  color: #9e3a20;
+}
+
+.import-log-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.import-type-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(15, 91, 92, 0.08);
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .calendar-shell {
   display: grid;
   gap: 16px;
@@ -558,6 +687,9 @@ code {
 @media (max-width: 1120px) {
   .hero-section,
   .status-grid,
+  .ops-overview,
+  .ops-metric-grid,
+  .workflow-grid,
   .report-grid,
   .import-grid {
     grid-template-columns: 1fr;
