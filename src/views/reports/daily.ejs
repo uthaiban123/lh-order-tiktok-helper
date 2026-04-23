@@ -9,6 +9,7 @@
     <nav class="hero-actions">
       <a href="/reports">กลับหน้ารายงาน</a>
       <a href="/reports/monthly?month=<%= periodLabel.slice(0, 7) %>">ดูรายเดือน</a>
+      <a href="/reports/daily/export?date=<%= encodeURIComponent(periodLabel) %>">Export CSV</a>
       <button type="button" data-print-report>พิมพ์รายงาน</button>
     </nav>
   </header>

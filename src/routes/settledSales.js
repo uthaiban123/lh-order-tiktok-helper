@@ -6,6 +6,7 @@ const OrderHeader = require("../models/OrderHeader");
 const OrderItem = require("../models/OrderItem");
 const ProductMaster = require("../models/ProductMaster");
 const { parseSellerSku } = require("../utils/sku");
+const { normalizeFilename } = require("../utils/filename");
 const { buildSummary } = require("../services/summaryService");
 const asyncHandler = require("../utils/asyncHandler");
 const { initializeCollections } = require("../config/mongodb");
@@ -13,6 +14,7 @@ const {
   importOrderWorkbook,
   importIncomeWorkbook,
   importProductMasterWorkbook,
+  deleteImportedBatch,
 } = require("../services/importService");
 
 const router = express.Router();
@@ -58,8 +60,33 @@ router.post("/batches", asyncHandler(async (req, res) => {
 }));
 
 router.get("/batches", asyncHandler(async (req, res) => {
+  const filename = String(req.query.filename || "").trim();
   const batches = await Batch.find().sort({ createdAt: -1 }).lean();
-  res.json({ items: batches });
+  const normalizedSearch = filename.toLowerCase();
+  const items = batches
+    .map((batch) => ({
+      ...batch,
+      filename: normalizeFilename(batch.filename),
+      deletable: batch.batchType === "orders" || batch.batchType === "income",
+    }))
+    .filter((batch) =>
+      normalizedSearch
+        ? String(batch.filename || "").toLowerCase().includes(normalizedSearch)
+        : true
+    );
+
+  res.json({
+    items,
+  });
+}));
+
+router.delete("/batches/:id", asyncHandler(async (req, res) => {
+  const result = await deleteImportedBatch({ batchId: req.params.id });
+  res.json({
+    ok: true,
+    ...result,
+    filename: normalizeFilename(result.filename),
+  });
 }));
 
 router.post("/income-entries", asyncHandler(async (req, res) => {

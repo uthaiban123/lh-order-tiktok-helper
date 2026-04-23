@@ -8,6 +8,7 @@ const ProductMaster = require("../models/ProductMaster");
 const { parseSellerSku } = require("../utils/sku");
 const { toIsoDateOnly, toMonthKey } = require("../utils/date");
 const { toNumber } = require("../utils/number");
+const { normalizeFilename } = require("../utils/filename");
 
 function getWorkbook(buffer) {
   return XLSX.read(buffer, {
@@ -70,6 +71,7 @@ function findValue(row, headerIndexMap, aliases) {
 }
 
 async function createBatch({ batchType, filename, fileHash, period, uploadedBy }) {
+  const normalizedFilename = normalizeFilename(filename);
   const existing = await Batch.findOne({ fileHash }).lean();
   if (existing) {
     const error = new Error("This file has already been imported.");
@@ -79,7 +81,7 @@ async function createBatch({ batchType, filename, fileHash, period, uploadedBy }
 
   return Batch.create({
     batchType,
-    filename,
+    filename: normalizedFilename,
     fileHash,
     uploadedBy: uploadedBy || "web-import",
     period,
@@ -521,8 +523,54 @@ async function importProductMasterWorkbook({ buffer, filename, uploadedBy }) {
   };
 }
 
+async function deleteImportedBatch({ batchId }) {
+  const batch = await Batch.findById(batchId).lean();
+  if (!batch) {
+    const error = new Error("batch not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (batch.batchType === "product_master") {
+    const error = new Error(
+      "Deleting product master batches is not supported yet because it may overwrite newer mappings."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const result = {
+    batchId: batch._id,
+    batchType: batch.batchType,
+    filename: batch.filename,
+    deletedOrderHeaders: 0,
+    deletedOrderItems: 0,
+    deletedIncomeEntries: 0,
+  };
+
+  if (batch.batchType === "orders") {
+    const [orderHeaderResult, orderItemResult] = await Promise.all([
+      OrderHeader.deleteMany({ batchId: batch._id }),
+      OrderItem.deleteMany({ batchId: batch._id }),
+    ]);
+
+    result.deletedOrderHeaders = Number(orderHeaderResult.deletedCount || 0);
+    result.deletedOrderItems = Number(orderItemResult.deletedCount || 0);
+  }
+
+  if (batch.batchType === "income") {
+    const incomeEntryResult = await IncomeEntry.deleteMany({ batchId: batch._id });
+    result.deletedIncomeEntries = Number(incomeEntryResult.deletedCount || 0);
+  }
+
+  await Batch.deleteOne({ _id: batch._id });
+
+  return result;
+}
+
 module.exports = {
   importOrderWorkbook,
   importIncomeWorkbook,
   importProductMasterWorkbook,
+  deleteImportedBatch,
 };
