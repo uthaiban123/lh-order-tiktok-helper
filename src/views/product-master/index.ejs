@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/report.css" />
+    <link rel="stylesheet" href="/product-master.css" />
+  </head>
+  <body>
+    <div class="page-nav-shell">
+      <nav class="page-nav" aria-label="Page navigation">
+        <div class="page-nav-history">
+          <button type="button" class="nav-button" data-nav-back data-fallback="/">
+            ย้อนกลับ
+          </button>
+        </div>
+        <div class="page-nav-links">
+          <a class="nav-link" href="/">หน้าหลักระบบ</a>
+          <a class="nav-link" href="/reports">หน้ารายงาน</a>
+          <a class="nav-link" href="/product-master">จัดการ Product Master</a>
+        </div>
+      </nav>
+    </div>
+
+    <div class="report-shell">
+      <div class="report-hero">
+        <div>
+          <p class="section-kicker">Product Master</p>
+          <h1>จัดการข้อมูลสินค้า</h1>
+          <p class="support-copy">
+            ดู แก้ไข และจัดการรายการสินค้าจาก TikTok พร้อมแมป base product code และ pack multiplier
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button id="open-create-button" type="button" class="primary-button">เพิ่มสินค้าใหม่</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Filter</p>
+            <h3>ค้นหาสินค้า</h3>
+          </div>
+          <span id="total-badge" class="panel-tag">0 รายการ</span>
+        </div>
+        <div class="search-row">
+          <input
+            id="search-input"
+            type="text"
+            placeholder="ค้นหาด้วย productId, skuId, sellerSku, ชื่อสินค้า หรือ base code..."
+          />
+          <button id="search-button" type="button" class="secondary-button">ค้นหา</button>
+          <button id="clear-search-button" type="button" class="secondary-button">ล้าง</button>
+        </div>
+      </div>
+
+      <div class="table-panel">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>productId</th>
+              <th>skuId</th>
+              <th>sellerSku</th>
+              <th>ชื่อสินค้า</th>
+              <th>baseProductCode</th>
+              <th>packMultiplier</th>
+              <th>category</th>
+              <th style="width: 120px;">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="product-table-body">
+            <tr>
+              <td colspan="8" class="empty-state">กำลังโหลดข้อมูล...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="pagination" class="pagination-bar"></div>
+    </div>
+
+    <dialog id="product-dialog" class="product-dialog">
+      <form method="dialog" class="dialog-form" id="product-form">
+        <div class="dialog-header">
+          <h2 id="dialog-title">เพิ่มสินค้าใหม่</h2>
+          <button type="button" id="dialog-close" class="dialog-close" aria-label="ปิด">×</button>
+        </div>
+        <div class="dialog-body">
+          <input type="hidden" id="product-id" />
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="form-product-id">Product ID <span class="required">*</span></label>
+              <input id="form-product-id" type="text" required />
+            </div>
+            <div class="form-field">
+              <label for="form-sku-id">SKU ID <span class="required">*</span></label>
+              <input id="form-sku-id" type="text" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="form-seller-sku">Seller SKU</label>
+              <input id="form-seller-sku" type="text" />
+            </div>
+            <div class="form-field">
+              <label for="form-manual-seller-sku">Manual Seller SKU</label>
+              <input id="form-manual-seller-sku" type="text" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field form-field-checkbox">
+              <input id="form-manual-seller-sku-enabled" type="checkbox" />
+              <label for="form-manual-seller-sku-enabled">ใช้ Manual Seller SKU</label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="form-product-name">ชื่อสินค้า <span class="required">*</span></label>
+              <input id="form-product-name" type="text" required />
+            </div>
+            <div class="form-field">
+              <label for="form-variation">Variation</label>
+              <input id="form-variation" type="text" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="form-category">Category</label>
+              <input id="form-category" type="text" />
+            </div>
+            <div class="form-field">
+              <label for="form-brand">Brand</label>
+              <input id="form-brand" type="text" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="form-base-code">Base Product Code</label>
+              <input id="form-base-code" type="text" />
+              <p class="field-hint">ถ้าเว้นว่าง ระบบจะคำนวณจาก Seller SKU อัตโนมัติ</p>
+            </div>
+            <div class="form-field">
+              <label for="form-pack-multiplier">Pack Multiplier</label>
+              <input id="form-pack-multiplier" type="number" min="1" value="1" />
+              <p class="field-hint">ถ้าเว้นว่าง ระบบจะคำนวณจาก Seller SKU อัตโนมัติ</p>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="form-price">Price</label>
+              <input id="form-price" type="number" min="0" step="0.01" value="0" />
+            </div>
+            <div class="form-field">
+              <label for="form-quantity">Quantity</label>
+              <input id="form-quantity" type="number" min="0" value="0" />
+            </div>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button type="button" id="dialog-cancel" class="secondary-button">ยกเลิก</button>
+          <button type="submit" id="dialog-save" class="primary-button">บันทึก</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/product-master.js"></script>
+  </body>
+</html>

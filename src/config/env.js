@@ -16,7 +16,7 @@ dotenv.config({ path: envPath });
 
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
-  port: Number(process.env.PORT || 3000),
+  port: Number(process.env.PORT || 6600),
   mongoUri: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017",
   databaseName: process.env.DATABASE_NAME || "lh_order_tiktok_helper",
 };

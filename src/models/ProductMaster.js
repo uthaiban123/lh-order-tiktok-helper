@@ -74,6 +74,17 @@ const productMasterSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    baseProductCode: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+    packMultiplier: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
   },
   {
     timestamps: true,
