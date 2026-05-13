@@ -70,6 +70,60 @@ function findValue(row, headerIndexMap, aliases) {
   return "";
 }
 
+const INCOME_COLUMNS = {
+  orderId: ["Order ID", "Order id", "Order/adjustment ID", "หมายเลขคำสั่งซื้อ/การปรับ"],
+  settlementDate: ["Settlement Date"],
+  orderSettledTime: ["Order settled time", "Order Settled Time", "เวลาที่ชำระคำสั่งซื้อ"],
+  entryType: ["Type", "ประเภทธุรกรรม"],
+  totalRevenue: ["Total Revenue", "Revenue", "รายได้รวม"],
+  totalSettlementAmount: [
+    "Total Settlement Amount",
+    "Settlement Amount",
+    "Total settlement amount",
+    "จำนวนเงินที่ชำระทั้งหมด",
+  ],
+  subtotalAfterSellerDiscounts: [
+    "Subtotal after seller discounts",
+    "Subtotal After Seller Discounts",
+    "ยอดรวมค่าสินค้าหลังหักส่วนลดจากผู้ขาย",
+  ],
+  sellerDiscounts: ["Seller discounts", "Seller Discounts", "ส่วนลดจากร้านค้า"],
+  refundSubtotal: [
+    "Refund subtotal",
+    "Refund Subtotal",
+    "Refund subtotal after seller discounts",
+    "ยอดรวมเงินคืนหลังหักส่วนลดจากร้านค้า",
+  ],
+  totalFees: ["Total Fees", "ค่าธรรมเนียมทั้งหมด"],
+  transactionFee: ["Transaction fee", "ค่าธรรมเนียมคำสั่งซื้อ"],
+  tiktokShopCommissionFee: [
+    "TikTok Shop commission fee",
+    "ค่าคอมมิชชั่น TikTok Shop",
+  ],
+  sellerShippingFee: [
+    "Seller shipping fee",
+    "ยอดรวมค่าจัดส่งที่ร้านค้าจ่ายจริง",
+  ],
+  affiliateCommission: ["Affiliate commission"],
+  liveSpecialsServiceFee: ["LIVE Specials service fee"],
+  commerceGrowthFee: ["Commerce growth fee"],
+  infrastructureFee: ["Infrastructure fee"],
+  totalAdjustments: ["Total adjustments"],
+  withdrawalAmount: ["Withdrawal amount"],
+};
+
+function hasAnyHeader(headerIndexMap, aliases) {
+  return aliases.some((alias) => headerIndexMap.has(normalizeHeader(alias)));
+}
+
+function normalizeIncomeEntryType(value) {
+  const text = String(value || "").trim();
+  if (text === "คำสั่งซื้อ") {
+    return "Order";
+  }
+  return text || "Order";
+}
+
 async function createBatch({ batchType, filename, fileHash, period, uploadedBy }) {
   const normalizedFilename = normalizeFilename(filename);
   const existing = await Batch.findOne({ fileHash }).lean();
@@ -189,6 +243,7 @@ async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
   const orderSheet =
     workbook.Sheets["Order details"] ||
     workbook.Sheets["Order Details"] ||
+    workbook.Sheets["รายละเอียดคำสั่งซื้อ"] ||
     workbook.Sheets[workbook.SheetNames[0]];
 
   if (!orderSheet) {
@@ -205,24 +260,21 @@ async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
   const dataRows = rows
     .slice(1)
     .filter((row) =>
-      String(findValue(row, headerIndexMap, ["Order ID", "Order id", "Order/adjustment ID"])).trim()
+      String(findValue(row, headerIndexMap, INCOME_COLUMNS.orderId)).trim()
     );
 
-  if (
-    !headerIndexMap.has(normalizeHeader("Order ID")) &&
-    !headerIndexMap.has(normalizeHeader("Order id")) &&
-    !headerIndexMap.has(normalizeHeader("Order/adjustment ID"))
-  ) {
-    const error = new Error("Income workbook is missing 'Order ID' or 'Order/adjustment ID' column.");
+  if (!hasAnyHeader(headerIndexMap, INCOME_COLUMNS.orderId)) {
+    const error = new Error(
+      "Income workbook is missing 'Order ID', 'Order/adjustment ID', or Thai order ID column."
+    );
     error.statusCode = 400;
     throw error;
   }
 
   const period = toMonthKey(
     findValue(dataRows[0] || [], headerIndexMap, [
-      "Settlement Date",
-      "Order settled time",
-      "Order Settled Time",
+      ...INCOME_COLUMNS.settlementDate,
+      ...INCOME_COLUMNS.orderSettledTime,
     ])
   );
 
@@ -250,51 +302,52 @@ async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
 
   const incomeEntries = dataRows.map((row) => {
     const orderSettledTime = String(
-      findValue(row, headerIndexMap, ["Order settled time", "Order Settled Time"])
+      findValue(row, headerIndexMap, INCOME_COLUMNS.orderSettledTime)
     ).trim();
     const settlementDate =
-      toIsoDateOnly(findValue(row, headerIndexMap, ["Settlement Date"])) ||
+      toIsoDateOnly(findValue(row, headerIndexMap, INCOME_COLUMNS.settlementDate)) ||
       toIsoDateOnly(orderSettledTime);
-    const entryType = String(findValue(row, headerIndexMap, ["Type"])).trim() || "Order";
+    const entryType = normalizeIncomeEntryType(
+      findValue(row, headerIndexMap, INCOME_COLUMNS.entryType)
+    );
 
     return {
       batchId: batch._id,
       orderId: String(
-        findValue(row, headerIndexMap, ["Order ID", "Order id", "Order/adjustment ID"])
+        findValue(row, headerIndexMap, INCOME_COLUMNS.orderId)
       ).trim(),
       settlementDate,
       orderSettledTime,
       entryType,
-      totalRevenue: toNumber(findValue(row, headerIndexMap, ["Total Revenue", "Revenue"])),
+      totalRevenue: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.totalRevenue)),
       totalSettlementAmount: toNumber(
-        findValue(row, headerIndexMap, ["Total Settlement Amount", "Settlement Amount"])
+        findValue(row, headerIndexMap, INCOME_COLUMNS.totalSettlementAmount)
       ),
       subtotalAfterSellerDiscounts: toNumber(
-        findValue(row, headerIndexMap, [
-          "Subtotal after seller discounts",
-          "Subtotal After Seller Discounts",
-        ])
+        findValue(row, headerIndexMap, INCOME_COLUMNS.subtotalAfterSellerDiscounts)
       ),
-      sellerDiscounts: toNumber(
-        findValue(row, headerIndexMap, ["Seller discounts", "Seller Discounts"])
-      ),
+      sellerDiscounts: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.sellerDiscounts)),
       refundSubtotal: toNumber(
-        findValue(row, headerIndexMap, ["Refund subtotal", "Refund Subtotal"])
+        findValue(row, headerIndexMap, INCOME_COLUMNS.refundSubtotal)
       ),
-      totalFees: toNumber(findValue(row, headerIndexMap, ["Total Fees"])),
-      transactionFee: toNumber(findValue(row, headerIndexMap, ["Transaction fee"])),
+      totalFees: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.totalFees)),
+      transactionFee: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.transactionFee)),
       tiktokShopCommissionFee: toNumber(
-        findValue(row, headerIndexMap, ["TikTok Shop commission fee"])
+        findValue(row, headerIndexMap, INCOME_COLUMNS.tiktokShopCommissionFee)
       ),
-      sellerShippingFee: toNumber(findValue(row, headerIndexMap, ["Seller shipping fee"])),
-      affiliateCommission: toNumber(findValue(row, headerIndexMap, ["Affiliate commission"])),
+      sellerShippingFee: toNumber(
+        findValue(row, headerIndexMap, INCOME_COLUMNS.sellerShippingFee)
+      ),
+      affiliateCommission: toNumber(
+        findValue(row, headerIndexMap, INCOME_COLUMNS.affiliateCommission)
+      ),
       liveSpecialsServiceFee: toNumber(
-        findValue(row, headerIndexMap, ["LIVE Specials service fee"])
+        findValue(row, headerIndexMap, INCOME_COLUMNS.liveSpecialsServiceFee)
       ),
-      commerceGrowthFee: toNumber(findValue(row, headerIndexMap, ["Commerce growth fee"])),
-      infrastructureFee: toNumber(findValue(row, headerIndexMap, ["Infrastructure fee"])),
-      totalAdjustments: toNumber(findValue(row, headerIndexMap, ["Total adjustments"])),
-      withdrawalAmount: toNumber(findValue(row, headerIndexMap, ["Withdrawal amount"])),
+      commerceGrowthFee: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.commerceGrowthFee)),
+      infrastructureFee: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.infrastructureFee)),
+      totalAdjustments: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.totalAdjustments)),
+      withdrawalAmount: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.withdrawalAmount)),
     };
   });
 
