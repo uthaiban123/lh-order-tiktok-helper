@@ -4,7 +4,7 @@ const batchSchema = new mongoose.Schema(
   {
     batchType: {
       type: String,
-      enum: ["income", "orders", "product_master"],
+      enum: ["income", "orders", "product_master", "shopee_catalog", "lazada_catalog"],
       required: true,
     },
     fileHash: {

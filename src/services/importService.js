@@ -412,167 +412,29 @@ async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
 }
 
 async function importProductMasterWorkbook({ buffer, filename, uploadedBy }) {
-  const workbook = getWorkbook(buffer);
-  const sheet = workbook.Sheets.Template || workbook.Sheets[workbook.SheetNames[0]];
+  const { importTiktokCatalog } = require("./platformCatalogImportService");
+  const result = await importTiktokCatalog({ buffer, filename, uploadedBy });
 
-  if (!sheet) {
-    const error = new Error("Product master workbook does not contain a readable template sheet.");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const rows = sheetRowsAsArrays(sheet);
-  const headers = rows[0] || [];
-  const headerIndexMap = new Map(
-    headers.map((header, index) => [normalizeHeader(header), index])
-  );
-  const dataRows = rows
-    .slice(5)
-    .filter((row) =>
-      [
-        findValue(row, headerIndexMap, ["product_id"]),
-        findValue(row, headerIndexMap, ["sku_id"]),
-        findValue(row, headerIndexMap, ["seller_sku"]),
-        findValue(row, headerIndexMap, ["product_name"]),
-      ].some((value) => String(value || "").trim())
-    );
-
-  if (
-    !headerIndexMap.has(normalizeHeader("product_id")) ||
-    !headerIndexMap.has(normalizeHeader("sku_id")) ||
-    !headerIndexMap.has(normalizeHeader("product_name"))
-  ) {
-    const error = new Error(
-      "Product master workbook is missing one of required columns: product_id, sku_id, product_name."
-    );
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const fileHash = fileHashFromBuffer(buffer);
-  const existingBatch = await Batch.findOne({ fileHash }).lean();
-  if (existingBatch) {
+  if (result.skippedReason === "duplicate_file_hash") {
     return {
-      batchId: existingBatch._id,
-      batchType: existingBatch.batchType,
-      filename: existingBatch.filename,
+      batchId: result.batchId,
+      batchType: "product_master",
+      filename,
       insertedProductMasters: 0,
       updatedProductMasters: 0,
-      skippedProductMasters: dataRows.length,
+      skippedProductMasters: 0,
       skippedReason: "duplicate_file_hash",
     };
   }
 
-  const batch = await createBatch({
-    batchType: "product_master",
-    filename,
-    fileHash,
-    period: "",
-    uploadedBy,
-  });
-
-  const preparedRows = dataRows.map((row) => ({
-    batchId: batch._id,
-    productId: String(findValue(row, headerIndexMap, ["product_id"])).trim(),
-    skuId: String(findValue(row, headerIndexMap, ["sku_id"])).trim(),
-    sellerSku: String(findValue(row, headerIndexMap, ["seller_sku"])).trim(),
-    productName: String(findValue(row, headerIndexMap, ["product_name"])).trim(),
-    variationValue: String(findValue(row, headerIndexMap, ["variation_value"])).trim(),
-    category: String(findValue(row, headerIndexMap, ["category"])).trim(),
-    brand: String(findValue(row, headerIndexMap, ["brand"])).trim(),
-    price: toNumber(findValue(row, headerIndexMap, ["price"])),
-    quantity: toNumber(findValue(row, headerIndexMap, ["quantity"])),
-  }));
-
-  const existingProductMasters = await ProductMaster.find(
-    {
-      skuId: { $in: preparedRows.map((row) => row.skuId).filter(Boolean) },
-    },
-    {
-      _id: 0,
-      skuId: 1,
-      manualSellerSku: 1,
-      manualSellerSkuEnabled: 1,
-    }
-  ).lean();
-
-  const existingProductMasterBySkuId = new Map(
-    existingProductMasters.map((row) => [row.skuId, row])
-  );
-
-  for (const row of preparedRows) {
-    const existing = existingProductMasterBySkuId.get(row.skuId);
-    row.manualSellerSku = existing?.manualSellerSku || "";
-    row.manualSellerSkuEnabled = existing?.manualSellerSkuEnabled || false;
-
-    if (row.manualSellerSkuEnabled && row.manualSellerSku) {
-      row.sellerSku = row.manualSellerSku;
-    }
-  }
-
-  const sellerSkuCounts = new Map();
-  for (const row of preparedRows) {
-    if (!row.sellerSku) {
-      continue;
-    }
-    sellerSkuCounts.set(row.sellerSku, (sellerSkuCounts.get(row.sellerSku) || 0) + 1);
-  }
-
-  for (const row of preparedRows) {
-    const duplicateCount = row.sellerSku ? sellerSkuCounts.get(row.sellerSku) || 0 : 0;
-    row.isSellerSkuUnique = !!row.sellerSku && duplicateCount === 1;
-    row.duplicateSellerSkuCount = duplicateCount;
-  }
-
-  const skuIds = preparedRows.map((row) => row.skuId).filter(Boolean);
-  const existingSkuIds = new Set(
-    existingProductMasters.map((row) => row.skuId)
-  );
-
-  const bulkOperations = preparedRows.map((row) => ({
-    updateOne: {
-      filter: { skuId: row.skuId },
-      update: { $set: row },
-      upsert: true,
-    },
-  }));
-
-  if (bulkOperations.length > 0) {
-    await ProductMaster.bulkWrite(bulkOperations, { ordered: false });
-  }
-
-  let skippedProductMasters = 0;
-  for (const row of preparedRows) {
-    if (!row.productId || !row.skuId || !row.productName) {
-      skippedProductMasters += 1;
-    }
-  }
-
-  const insertedProductMasters = preparedRows.filter(
-    (row) => row.productId && row.skuId && row.productName && !existingSkuIds.has(row.skuId)
-  ).length;
-  const updatedProductMasters = preparedRows.filter(
-    (row) => row.productId && row.skuId && row.productName && existingSkuIds.has(row.skuId)
-  ).length;
-
-  await Batch.updateOne(
-    { _id: batch._id },
-    {
-      $set: {
-        status: insertedProductMasters > 0 || updatedProductMasters > 0 ? "committed" : "skipped",
-        warningCount: skippedProductMasters,
-      },
-    }
-  );
-
   return {
-    batchId: batch._id,
-    batchType: batch.batchType,
-    filename: batch.filename,
-    insertedProductMasters,
-    updatedProductMasters,
-    skippedProductMasters,
-    duplicateSellerSkuCount: [...sellerSkuCounts.values()].filter((count) => count > 1).length,
+    batchId: result.batchId,
+    batchType: result.batchType,
+    filename: result.filename,
+    insertedProductMasters: result.inserted,
+    updatedProductMasters: result.updated,
+    skippedProductMasters: Math.max(0, result.totalRows - result.inserted - result.updated),
+    duplicateSellerSkuCount: 0,
   };
 }
 

@@ -1,0 +1,178 @@
+.stats-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(15, 91, 92, 0.06);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #5a6b6b;
+}
+
+.import-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.import-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px dashed rgba(15, 91, 92, 0.25);
+  border-radius: 12px;
+}
+
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pending-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 91, 92, 0.12);
+  background: #fff;
+}
+
+.pending-item-top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.tiktok-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(15, 91, 92, 0.1);
+}
+
+.tiktok-picker-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f5b5c;
+}
+
+.tiktok-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tiktok-picker-row input[type="search"] {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 91, 92, 0.2);
+}
+
+.tiktok-pick-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid rgba(15, 91, 92, 0.12);
+  border-radius: 8px;
+  background: #fafcfc;
+}
+
+.tiktok-pick-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.tiktok-pick-option:hover,
+.tiktok-pick-option.is-selected {
+  background: rgba(15, 91, 92, 0.08);
+}
+
+.tiktok-pick-selected {
+  font-size: 0.85rem;
+  color: #1a4d4e;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(15, 91, 92, 0.06);
+}
+
+.pending-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.pending-meta {
+  font-size: 0.85rem;
+  color: #5a6b6b;
+}
+
+.pending-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.bulk-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.bulk-row input[type="number"] {
+  width: 160px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 91, 92, 0.2);
+}
+
+.link-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: rgba(15, 91, 92, 0.1);
+}
+
+.link-badge.linked {
+  background: rgba(34, 139, 34, 0.15);
+  color: #1a6b1a;
+}
+
+.link-badge.unlinked {
+  background: rgba(180, 80, 0, 0.12);
+  color: #8a4a00;
+}
+
+.price-input {
+  width: 90px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 91, 92, 0.2);
+}

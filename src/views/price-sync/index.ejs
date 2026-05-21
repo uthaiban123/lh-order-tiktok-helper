@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/report.css" />
+    <link rel="stylesheet" href="/product-master.css" />
+    <link rel="stylesheet" href="/price-sync.css" />
+  </head>
+  <body>
+    <div class="page-nav-shell">
+      <nav class="page-nav" aria-label="Page navigation">
+        <div class="page-nav-history">
+          <button type="button" class="nav-button" data-nav-back data-fallback="/">ย้อนกลับ</button>
+        </div>
+        <div class="page-nav-links">
+          <a class="nav-link" href="/">หน้าหลักระบบ</a>
+          <a class="nav-link" href="/product-master">Product Master</a>
+        </div>
+      </nav>
+    </div>
+
+    <div class="report-shell">
+      <div class="report-hero">
+        <div>
+          <p class="section-kicker">Price Sync</p>
+          <h1>ซิงค์ราคา TikTok / Shopee / Lazada</h1>
+          <p class="support-copy">
+            Import แคตตาล็อก → จับคู่ด้วยชื่อสินค้า → แก้ราคาครั้งเดียว → Export Batch Edit 3 แพลตฟอร์ม
+          </p>
+        </div>
+        <div class="hero-actions">
+          <a id="export-zip-link" class="primary-button" href="/api/price-sync/export?platform=all">ดาวน์โหลด ZIP ทั้ง 3</a>
+        </div>
+      </div>
+
+      <div id="stats-panel" class="panel stats-panel">
+        <div class="stat-card"><span class="stat-label">TikTok</span><strong id="stat-tiktok">-</strong></div>
+        <div class="stat-card"><span class="stat-label">Shopee linked</span><strong id="stat-shopee">-</strong></div>
+        <div class="stat-card"><span class="stat-label">Lazada linked</span><strong id="stat-lazada">-</strong></div>
+        <div class="stat-card"><span class="stat-label">รอจับคู่</span><strong id="stat-pending">-</strong></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Step 1</p>
+            <h3>Import ไฟล์แคตตาล็อก</h3>
+          </div>
+        </div>
+        <div class="import-grid">
+          <label class="import-card">
+            <span>TikTok Batch Edit</span>
+            <input type="file" accept=".xlsx,.xls" data-import="tiktok" />
+            <button type="button" class="secondary-button" data-upload="tiktok">อัปโหลด</button>
+          </label>
+          <label class="import-card">
+            <span>Shopee Mass Update</span>
+            <input type="file" accept=".xlsx,.xls" data-import="shopee" />
+            <button type="button" class="secondary-button" data-upload="shopee">อัปโหลด</button>
+          </label>
+          <label class="import-card">
+            <span>Lazada Price/Stock</span>
+            <input type="file" accept=".xlsx,.xls" data-import="lazada" />
+            <button type="button" class="secondary-button" data-upload="lazada">อัปโหลด</button>
+          </label>
+        </div>
+        <p id="import-status" class="support-copy"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Step 2</p>
+            <h3>ยืนยันการจับคู่ (ชื่อสินค้า)</h3>
+          </div>
+          <div class="inline-actions">
+            <select id="pending-platform">
+              <option value="shopee">Shopee</option>
+              <option value="lazada">Lazada</option>
+            </select>
+            <select id="pending-status">
+              <option value="open">รอจับคู่ทั้งหมด</option>
+              <option value="suggested">มีคำแนะนำ</option>
+              <option value="pending">ยังไม่มีคำแนะนำ</option>
+            </select>
+            <button id="refresh-pending" type="button" class="secondary-button">รีเฟรช</button>
+            <button id="resuggest-pending" type="button" class="secondary-button">แนะนำใหม่</button>
+          </div>
+        </div>
+        <div id="pending-list" class="pending-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Step 3</p>
+            <h3>แก้ราคากลาง</h3>
+          </div>
+        </div>
+        <div class="bulk-row">
+          <input id="bulk-percent" type="number" placeholder="ปรับ % เช่น 10 หรือ -5" />
+          <button id="bulk-percent-btn" type="button" class="secondary-button">ปรับทุกรายการในตาราง %</button>
+          <a class="action-link" href="/api/price-sync/export?platform=tiktok">Export TikTok</a>
+          <a class="action-link" href="/api/price-sync/export?platform=shopee">Export Shopee</a>
+          <a class="action-link" href="/api/price-sync/export?platform=lazada">Export Lazada</a>
+        </div>
+        <div class="search-row">
+          <input id="product-search" type="text" placeholder="ค้นหา skuId, sellerSku, ชื่อ..." />
+          <button id="product-search-btn" type="button" class="secondary-button">ค้นหา</button>
+        </div>
+        <div class="table-panel">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>SKU ID</th>
+                <th>ชื่อ</th>
+                <th>ราคากลาง</th>
+                <th>Shopee</th>
+                <th>Lazada</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="product-table-body"></tbody>
+          </table>
+        </div>
+        <div id="product-pagination" class="pagination"></div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/report.js"></script>
+    <script src="/price-sync.js"></script>
+  </body>
+</html>

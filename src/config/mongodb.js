@@ -5,6 +5,7 @@ const IncomeEntry = require("../models/IncomeEntry");
 const OrderHeader = require("../models/OrderHeader");
 const OrderItem = require("../models/OrderItem");
 const ProductMaster = require("../models/ProductMaster");
+const PendingPlatformListing = require("../models/PendingPlatformListing");
 
 async function initializeCollections() {
   await Promise.all([
@@ -13,6 +14,7 @@ async function initializeCollections() {
     OrderHeader.createCollection(),
     OrderItem.createCollection(),
     ProductMaster.createCollection(),
+    PendingPlatformListing.createCollection(),
   ]);
 
   await IncomeEntry.updateMany(
@@ -26,6 +28,7 @@ async function initializeCollections() {
     OrderHeader.syncIndexes(),
     OrderItem.syncIndexes(),
     ProductMaster.syncIndexes(),
+    PendingPlatformListing.syncIndexes(),
   ]);
 }
 
