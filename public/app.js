@@ -392,7 +392,9 @@ function resetFileInput(form) {
 
 function updateImportFeedback(kind, data) {
   const feedbackMap = {
-    orders: `นำเข้า ${data.filename || "-"} แล้ว: ${formatNumber(data.insertedOrderHeaders)} orders / ${formatNumber(data.insertedOrderItems)} items`,
+    orders: data.skippedReason === "duplicate_file_hash"
+      ? `ข้าม ${data.filename || "-"} เพราะเป็นไฟล์ซ้ำ`
+      : `นำเข้า ${data.filename || "-"} แล้ว: ${formatNumber(data.insertedOrderHeaders)} orders / ${formatNumber(data.insertedOrderItems)} items${data.skippedOrderItems ? `, ข้าม ${formatNumber(data.skippedOrderItems)} รายการซ้ำ` : ""}`,
     income: data.skippedReason === "duplicate_file_hash"
       ? `ข้าม ${data.filename || "-"} เพราะเป็นไฟล์ซ้ำ`
       : `นำเข้า ${data.filename || "-"} แล้ว: ${formatNumber(data.insertedIncomeEntries)} income entries${data.skippedIncomeEntries ? `, ข้าม ${formatNumber(data.skippedIncomeEntries)} รายการซ้ำ` : ""}`,
@@ -419,7 +421,9 @@ function buildImportNotice(kind, data, counts, becameReady, options = {}) {
   if (kind === "orders") {
     items.push(
       `<li><strong>Orders:</strong> ${formatNumber(data.insertedOrderHeaders)}</li>`,
-      `<li><strong>Order items:</strong> ${formatNumber(data.insertedOrderItems)}</li>`
+      `<li><strong>Order items:</strong> ${formatNumber(data.insertedOrderItems)}</li>`,
+      `<li><strong>Skipped headers:</strong> ${formatNumber(data.skippedOrderHeaders)}</li>`,
+      `<li><strong>Skipped items:</strong> ${formatNumber(data.skippedOrderItems)}</li>`
     );
   }
 

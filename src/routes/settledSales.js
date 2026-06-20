@@ -204,7 +204,13 @@ router.post(
       uploadedBy: String(req.body.uploadedBy || "web-import").trim(),
     });
 
-    return res.status(201).json(result);
+    const statusCode =
+      result.skippedReason === "duplicate_file_hash" ||
+      (result.insertedOrderHeaders === 0 && result.insertedOrderItems === 0)
+        ? 200
+        : 201;
+
+    return res.status(statusCode).json(result);
   })
 );
 

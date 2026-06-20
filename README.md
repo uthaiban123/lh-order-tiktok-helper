@@ -112,6 +112,7 @@ pm2 save
 - ระบบ join ข้อมูลด้วย `Order ID`
 - startup จะสร้าง collection และ sync index ให้อัตโนมัติ
 - import ซ้ำของ `income` จะ `skip duplicates`
+- import ซ้ำของ `orders` จะ `skip duplicates` ทั้งไฟล์เดิม (file hash) และรายการ order/item ที่เคยมีในระบบแล้ว
 
 ## Public Repo Safety
 

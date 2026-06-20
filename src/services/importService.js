@@ -148,6 +148,16 @@ function buildIncomeLogicalKey({ orderId, settlementDate, entryType }) {
   return `${orderId}__${settlementDate}__${entryType}`;
 }
 
+function buildOrderItemLogicalKey(item) {
+  return [
+    item.orderId,
+    item.sellerSku || "",
+    Number(item.qty || 0),
+    item.productName || "",
+    Number(item.itemSubtotalAfterDiscount || 0),
+  ].join("__");
+}
+
 async function importOrderWorkbook({ buffer, filename, uploadedBy }) {
   const workbook = getWorkbook(buffer);
   const sheet = workbook.Sheets.OrderSKUList || workbook.Sheets[workbook.SheetNames[0]];
@@ -173,10 +183,26 @@ async function importOrderWorkbook({ buffer, filename, uploadedBy }) {
   const batchPeriod = toMonthKey(
     findValue(dataRows[0] || [], headerIndexMap, ["Created Time", "Paid Time", "Delivered Time"])
   );
+  const fileHash = fileHashFromBuffer(buffer);
+  const existingBatch = await Batch.findOne({ fileHash }).lean();
+  if (existingBatch) {
+    return {
+      batchId: existingBatch._id,
+      batchType: existingBatch.batchType,
+      filename: existingBatch.filename,
+      period: existingBatch.period,
+      insertedOrderHeaders: 0,
+      insertedOrderItems: 0,
+      skippedOrderHeaders: 0,
+      skippedOrderItems: 0,
+      skippedReason: "duplicate_file_hash",
+    };
+  }
+
   const batch = await createBatch({
     batchType: "orders",
     filename,
-    fileHash: fileHashFromBuffer(buffer),
+    fileHash,
     period: batchPeriod,
     uploadedBy,
   });
@@ -225,16 +251,80 @@ async function importOrderWorkbook({ buffer, filename, uploadedBy }) {
     });
   }
 
-  await OrderHeader.insertMany([...orderHeaders.values()], { ordered: false });
-  await OrderItem.insertMany(orderItems, { ordered: false });
+  const orderIds = [...new Set(orderItems.map((item) => item.orderId))];
+  const [existingHeaders, existingItems] = await Promise.all([
+    OrderHeader.find({ orderId: { $in: orderIds } }, { _id: 0, orderId: 1 }).lean(),
+    OrderItem.find(
+      { orderId: { $in: orderIds } },
+      {
+        _id: 0,
+        orderId: 1,
+        sellerSku: 1,
+        qty: 1,
+        productName: 1,
+        itemSubtotalAfterDiscount: 1,
+      }
+    ).lean(),
+  ]);
+
+  const existingOrderIdSet = new Set(existingHeaders.map((header) => header.orderId));
+  const existingItemKeySet = new Set(
+    existingItems.map((item) => buildOrderItemLogicalKey(item))
+  );
+
+  const headersToInsert = [];
+  let skippedOrderHeaders = 0;
+  for (const header of orderHeaders.values()) {
+    if (existingOrderIdSet.has(header.orderId)) {
+      skippedOrderHeaders += 1;
+      continue;
+    }
+
+    existingOrderIdSet.add(header.orderId);
+    headersToInsert.push(header);
+  }
+
+  const itemsToInsert = [];
+  let skippedOrderItems = 0;
+  for (const item of orderItems) {
+    const logicalKey = buildOrderItemLogicalKey(item);
+    if (existingItemKeySet.has(logicalKey)) {
+      skippedOrderItems += 1;
+      continue;
+    }
+
+    existingItemKeySet.add(logicalKey);
+    itemsToInsert.push(item);
+  }
+
+  if (headersToInsert.length > 0) {
+    await OrderHeader.insertMany(headersToInsert, { ordered: false });
+  }
+
+  if (itemsToInsert.length > 0) {
+    await OrderItem.insertMany(itemsToInsert, { ordered: false });
+  }
+
+  await Batch.updateOne(
+    { _id: batch._id },
+    {
+      $set: {
+        status:
+          headersToInsert.length === 0 && itemsToInsert.length === 0 ? "skipped" : "committed",
+        warningCount: skippedOrderHeaders + skippedOrderItems,
+      },
+    }
+  );
 
   return {
     batchId: batch._id,
     batchType: batch.batchType,
     filename: batch.filename,
     period: batch.period,
-    insertedOrderHeaders: orderHeaders.size,
-    insertedOrderItems: orderItems.length,
+    insertedOrderHeaders: headersToInsert.length,
+    insertedOrderItems: itemsToInsert.length,
+    skippedOrderHeaders,
+    skippedOrderItems,
   };
 }
 
@@ -488,4 +578,5 @@ module.exports = {
   importIncomeWorkbook,
   importProductMasterWorkbook,
   deleteImportedBatch,
+  buildOrderItemLogicalKey,
 };
