@@ -861,4 +861,5 @@ async function buildSummary({ settlementDate, month }) {
 
 module.exports = {
   buildSummary,
+  summarizeOrderItems,
 };

@@ -1,0 +1,246 @@
+.count-form {
+  display: grid;
+  gap: 16px;
+}
+
+.date-range-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.date-range-row label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.date-range-row input[type="date"] {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  font: inherit;
+}
+
+.sku-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sku-toolbar input[type="text"] {
+  flex: 1 1 260px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  font: inherit;
+}
+
+.sku-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 4px;
+}
+
+.sku-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.sku-item:hover {
+  border-color: var(--accent);
+}
+
+.sku-item input[type="checkbox"] {
+  margin-top: 4px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.sku-item-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sku-item-body strong {
+  word-break: break-all;
+}
+
+.sku-item-meta {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.summary-panel {
+  margin: 20px 0;
+}
+
+.summary-panel.hidden,
+.hidden {
+  display: none;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.summary-card {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+.summary-card .metric-value {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.5rem;
+}
+
+.total-row {
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+.total-row td {
+  border-top: 2px solid var(--line);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px 12px;
+}
+
+.print-only {
+  display: none;
+}
+
+.product-count-report-page .report-meta-panel,
+.product-count-report-page .report-footnote {
+  margin-bottom: 16px;
+}
+
+.report-notes {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .product-count-report-page .report-hero {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+    margin-bottom: 18px;
+  }
+
+  .print-only h1 {
+    font-size: 1.6rem;
+  }
+
+  .product-count-report-page .report-shell {
+    width: 100%;
+    padding: 0;
+  }
+
+  .product-count-report-page .panel,
+  .product-count-report-page .stat-card {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .product-count-report-page .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    margin-bottom: 12px;
+  }
+
+  .product-count-report-page .report-meta-panel {
+    break-inside: avoid;
+  }
+
+  .product-count-report-page .compact-table {
+    font-size: 0.82rem;
+  }
+
+  .product-count-report-page .compact-table th,
+  .product-count-report-page .compact-table td {
+    padding: 8px 10px;
+  }
+
+  .product-count-report-page .report-footnote {
+    break-inside: avoid;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .sku-toolbar {
+    flex-direction: column;
+  }
+
+  .sku-toolbar input[type="text"] {
+    width: 100%;
+  }
+}

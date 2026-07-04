@@ -8,6 +8,10 @@ const ProductMaster = require("../models/ProductMaster");
 const { parseSellerSku } = require("../utils/sku");
 const { normalizeFilename } = require("../utils/filename");
 const { buildSummary } = require("../services/summaryService");
+const {
+  buildProductCount,
+  listSellerSkus,
+} = require("../services/productCountService");
 const asyncHandler = require("../utils/asyncHandler");
 const { initializeCollections } = require("../config/mongodb");
 const {
@@ -295,6 +299,35 @@ router.get("/monthly-summary", asyncHandler(async (req, res) => {
 
   const summary = await buildSummary({ month });
   return res.json({ month, ...summary });
+}));
+
+router.get("/seller-skus", asyncHandler(async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const items = await listSellerSkus({ search });
+  return res.json({ items });
+}));
+
+router.get("/product-count", asyncHandler(async (req, res) => {
+  const startDate = String(req.query.startDate || "").trim();
+  const endDate = String(req.query.endDate || "").trim();
+  const sellerSkus = String(req.query.sellerSkus || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({
+      error: "startDate และ endDate จำเป็นต้องมี ใช้รูปแบบ YYYY-MM-DD",
+    });
+  }
+
+  const result = await buildProductCount({
+    startDate,
+    endDate,
+    sellerSkus,
+  });
+
+  return res.json(result);
 }));
 
 module.exports = router;

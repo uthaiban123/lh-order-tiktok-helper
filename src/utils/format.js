@@ -16,8 +16,35 @@ function formatPercent(value) {
   return `${formatNumber(value, 2)}%`;
 }
 
+function formatIsoDateTh(value) {
+  const [year, month, day] = String(value || "").split("-");
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+
+  if (!year || !month || !day || Number.isNaN(date.getTime())) {
+    return String(value || "-");
+  }
+
+  return new Intl.DateTimeFormat("th-TH", {
+    dateStyle: "long",
+  }).format(date);
+}
+
+function formatPeriodLabel(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return "-";
+  }
+
+  if (startDate === endDate) {
+    return formatIsoDateTh(startDate);
+  }
+
+  return `${formatIsoDateTh(startDate)} – ${formatIsoDateTh(endDate)}`;
+}
+
 module.exports = {
   formatMoney,
   formatNumber,
   formatPercent,
+  formatIsoDateTh,
+  formatPeriodLabel,
 };

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/report.css" />
+    <link rel="stylesheet" href="/product-count.css" />
+  </head>
+  <body>
+    <div class="page-nav-shell">
+      <nav class="page-nav" aria-label="Page navigation">
+        <div class="page-nav-history">
+          <button type="button" class="nav-button" data-nav-back data-fallback="/">
+            ย้อนกลับ
+          </button>
+        </div>
+        <div class="page-nav-links">
+          <a class="nav-link" href="/">หน้าหลักระบบ</a>
+          <a class="nav-link" href="/reports">หน้ารายงาน</a>
+          <a class="nav-link" href="/product-master">จัดการ Product Master</a>
+        </div>
+      </nav>
+    </div>
+
+    <div class="report-shell">
+      <div class="report-hero">
+        <div>
+          <p class="section-kicker">Product Count</p>
+          <h1>นับจำนวนสินค้าตามช่วงวันที่</h1>
+          <p class="support-copy">
+            เลือกช่วงวันที่ settlement และ Seller SKU ที่ต้องการนับ
+            ระบบจะคำนวณจำนวนขาย (TikTok units) และจำนวนเทียบเท่าฐาน (qty × pack multiplier)
+          </p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Filter</p>
+            <h3>กำหนดช่วงวันที่</h3>
+          </div>
+        </div>
+        <form id="count-form" class="count-form">
+          <div class="date-range-row">
+            <label>
+              วันที่เริ่มต้น (Settlement)
+              <input id="start-date" name="startDate" type="date" required />
+            </label>
+            <label>
+              วันที่สิ้นสุด (Settlement)
+              <input id="end-date" name="endDate" type="date" required />
+            </label>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Seller SKU</p>
+            <h3>เลือกสินค้าที่จะนับ</h3>
+          </div>
+          <span id="selected-count-badge" class="panel-tag">เลือกแล้ว 0 SKU</span>
+        </div>
+        <div class="sku-toolbar">
+          <input
+            id="sku-search-input"
+            type="text"
+            placeholder="ค้นหา Seller SKU, ชื่อสินค้า หรือ base code..."
+          />
+          <button id="sku-search-button" type="button" class="secondary-button">ค้นหา</button>
+          <button id="select-all-button" type="button" class="secondary-button">เลือกทั้งหมด</button>
+          <button id="clear-selection-button" type="button" class="secondary-button">ล้างการเลือก</button>
+        </div>
+        <div id="sku-list" class="sku-list" aria-live="polite">
+          <p class="support-copy">กำลังโหลดรายการ Seller SKU...</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Action</p>
+            <h3>สรุปผล</h3>
+          </div>
+        </div>
+        <div class="action-row">
+          <button id="count-button" type="button" class="primary-button">นับจำนวนสินค้า</button>
+          <button id="report-button" type="button" class="secondary-button" disabled>
+            เปิดรายงาน / พิมพ์
+          </button>
+          <button id="export-button" type="button" class="secondary-button" disabled>
+            ดาวน์โหลด CSV
+          </button>
+        </div>
+        <p id="count-status" class="support-copy">เลือกช่วงวันที่และ Seller SKU แล้วกดนับจำนวน</p>
+      </div>
+
+      <div id="summary-panel" class="summary-panel hidden">
+        <div class="summary-grid">
+          <article class="summary-card">
+            <p class="status-label">Settled Orders</p>
+            <strong id="stat-settled-orders" class="metric-value">0</strong>
+          </article>
+          <article class="summary-card">
+            <p class="status-label">Coverage</p>
+            <strong id="stat-coverage" class="metric-value">0%</strong>
+          </article>
+          <article class="summary-card">
+            <p class="status-label">Sold Units (TikTok)</p>
+            <strong id="stat-sold-units" class="metric-value">0</strong>
+          </article>
+          <article class="summary-card">
+            <p class="status-label">Equivalent Base Units</p>
+            <strong id="stat-base-units" class="metric-value">0</strong>
+          </article>
+        </div>
+      </div>
+
+      <div class="table-panel">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Seller SKU</th>
+              <th>ชื่อสินค้า</th>
+              <th>Base Code</th>
+              <th>ตัวคูณ</th>
+              <th>ออเดอร์</th>
+              <th>จำนวนขาย (TikTok)</th>
+              <th>จำนวนเทียบเท่าฐาน</th>
+            </tr>
+          </thead>
+          <tbody id="result-table-body">
+            <tr>
+              <td colspan="7" class="empty-state">ยังไม่มีผลลัพธ์ — กดปุ่ม "นับจำนวนสินค้า" เพื่อเริ่มต้น</td>
+            </tr>
+          </tbody>
+          <tfoot id="result-table-foot" class="hidden">
+            <tr class="total-row">
+              <td colspan="4"><strong>รวมทั้งหมด</strong></td>
+              <td id="total-orders">0</td>
+              <td id="total-sold-units">0</td>
+              <td id="total-base-units">0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <script charset="utf-8" src="/report.js"></script>
+    <script charset="utf-8" src="/product-count.js"></script>
+  </body>
+</html>

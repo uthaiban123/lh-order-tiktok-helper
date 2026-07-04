@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/report.css" />
+    <link rel="stylesheet" href="/product-count.css" />
+  </head>
+  <body class="product-count-report-page">
+    <div class="page-nav-shell no-print">
+      <nav class="page-nav" aria-label="Page navigation">
+        <div class="page-nav-history">
+          <button type="button" class="nav-button" data-nav-back data-fallback="/product-count">
+            ย้อนกลับ
+          </button>
+        </div>
+        <div class="page-nav-links">
+          <a class="nav-link" href="/">หน้าหลักระบบ</a>
+          <a class="nav-link" href="/product-count">นับจำนวนสินค้า</a>
+        </div>
+      </nav>
+    </div>
+
+    <div class="report-shell">
+      <div class="report-hero">
+        <div>
+          <p class="kicker">Product Count Report</p>
+          <h1>รายงานนับจำนวนสินค้า TikTok</h1>
+          <p class="subtitle">
+            ช่วงวันที่ Settlement:
+            <strong><%= formatPeriodLabel(result.startDate, result.endDate) %></strong>
+          </p>
+          <p class="subtitle muted">
+            ออกรายงานเมื่อ <%= generatedAt %> · เลือก <%= formatNumber(result.sellerSkus.length) %> Seller SKU
+          </p>
+        </div>
+        <div class="hero-actions no-print">
+          <button type="button" data-print-report>พิมพ์รายงาน</button>
+          <a
+            class="inline-link"
+            href="/product-count/export?startDate=<%= encodeURIComponent(result.startDate) %>&endDate=<%= encodeURIComponent(result.endDate) %>&sellerSkus=<%= encodeURIComponent(result.sellerSkus.join(',')) %>"
+          >
+            ดาวน์โหลด CSV
+          </a>
+          <a class="inline-link" href="/product-count">เลือกใหม่</a>
+        </div>
+      </div>
+
+      <div class="print-header print-only">
+        <p class="kicker">LH Order Helper</p>
+        <h1>รายงานนับจำนวนสินค้า TikTok</h1>
+        <p class="subtitle">
+          Settlement: <%= formatPeriodLabel(result.startDate, result.endDate) %>
+        </p>
+        <p class="subtitle muted">พิมพ์เมื่อ <%= generatedAt %></p>
+      </div>
+
+      <div class="stats-grid">
+        <article class="stat-card">
+          <span class="stat-label">Settled Orders</span>
+          <strong><%= formatNumber(result.sourceStats.settledOrders) %></strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Coverage</span>
+          <strong><%= formatPercent(result.sourceStats.coveragePercent) %></strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Sold Units (TikTok)</span>
+          <strong><%= formatNumber(result.totals.soldUnitsTikTok) %></strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Equivalent Base Units</span>
+          <strong><%= formatNumber(result.totals.equivalentBaseUnits) %></strong>
+        </article>
+      </div>
+
+      <% if (result.sellerSkus.length) { %>
+      <div class="panel report-meta-panel">
+        <h2>Seller SKU ที่เลือก</h2>
+        <p class="subtitle"><%= result.sellerSkus.join(", ") %></p>
+      </div>
+      <% } %>
+
+      <div class="panel">
+        <h2>รายละเอียดตาม Seller SKU</h2>
+        <div class="table-wrap compact-wrap">
+          <table class="compact-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Seller SKU</th>
+                <th>ชื่อสินค้า</th>
+                <th>Base Code</th>
+                <th class="num">ตัวคูณ</th>
+                <th class="num">ออเดอร์</th>
+                <th class="num">ขาย (TikTok)</th>
+                <th class="num">เทียบเท่าฐาน</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (!result.items.length) { %>
+              <tr>
+                <td colspan="8" class="empty-cell">
+                  ไม่พบข้อมูลขายในช่วงวันที่และ Seller SKU ที่เลือก
+                </td>
+              </tr>
+              <% } else { %>
+              <% result.items.forEach(function(row, index) { %>
+              <tr>
+                <td class="num"><%= index + 1 %></td>
+                <td><%= row.sellerSku %></td>
+                <td><%= row.productName %></td>
+                <td><%= row.baseProductCode || "-" %></td>
+                <td class="num"><%= formatNumber(row.packMultiplier) %></td>
+                <td class="num"><%= formatNumber(row.ordersCount) %></td>
+                <td class="num"><%= formatNumber(row.soldUnitsTikTok) %></td>
+                <td class="num"><%= formatNumber(row.equivalentBaseUnits) %></td>
+              </tr>
+              <% }); %>
+              <% } %>
+            </tbody>
+            <% if (result.items.length) { %>
+            <tfoot>
+              <tr>
+                <th colspan="5">รวมทั้งหมด</th>
+                <th class="num"><%= formatNumber(result.totals.ordersCount) %></th>
+                <th class="num"><%= formatNumber(result.totals.soldUnitsTikTok) %></th>
+                <th class="num"><%= formatNumber(result.totals.equivalentBaseUnits) %></th>
+              </tr>
+            </tfoot>
+            <% } %>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel report-footnote">
+        <h2>หมายเหตุ</h2>
+        <ul class="report-notes">
+          <li>ใช้วันที่ Settlement จากไฟล์ Income เป็นช่วงอ้างอิง</li>
+          <li>จำนวนขาย (TikTok) = ผลรวม qty จากไฟล์ Order</li>
+          <li>จำนวนเทียบเท่าฐาน = qty × pack multiplier (เช่น SKU ลงท้าย -2 มีตัวคูณ 2)</li>
+          <li>ออเดอร์รวม = จำนวนออเดอร์ที่ไม่ซ้ำกันในช่วงที่เลือก (ไม่รวมซ้ำข้าม SKU)</li>
+        </ul>
+      </div>
+    </div>
+
+    <script charset="utf-8" src="/report.js"></script>
+    <% if (autoPrint) { %>
+    <script charset="utf-8">
+      window.addEventListener("load", () => {
+        window.print();
+      });
+    </script>
+    <% } %>
+  </body>
+</html>
