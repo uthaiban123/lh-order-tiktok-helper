@@ -75,12 +75,13 @@ const INCOME_COLUMNS = {
   settlementDate: ["Settlement Date"],
   orderSettledTime: ["Order settled time", "Order Settled Time", "เวลาที่ชำระคำสั่งซื้อ"],
   entryType: ["Type", "ประเภทธุรกรรม"],
-  totalRevenue: ["Total Revenue", "Revenue", "รายได้รวม"],
+  totalRevenue: ["Total Revenue", "Revenue", "รายได้รวม", "รายได้ทั้งหมด"],
   totalSettlementAmount: [
     "Total Settlement Amount",
     "Settlement Amount",
     "Total settlement amount",
     "จำนวนเงินที่ชำระทั้งหมด",
+    "ยอดการชำระเงินทั้งหมด",
   ],
   subtotalAfterSellerDiscounts: [
     "Subtotal after seller discounts",
@@ -93,6 +94,7 @@ const INCOME_COLUMNS = {
     "Refund Subtotal",
     "Refund subtotal after seller discounts",
     "ยอดรวมเงินคืนหลังหักส่วนลดจากร้านค้า",
+    "ยอดรวมเงินคืนหลังหักส่วนลดจากผู้ขาย",
   ],
   totalFees: ["Total Fees", "ค่าธรรมเนียมทั้งหมด"],
   transactionFee: ["Transaction fee", "ค่าธรรมเนียมคำสั่งซื้อ"],
@@ -104,10 +106,10 @@ const INCOME_COLUMNS = {
     "Seller shipping fee",
     "ยอดรวมค่าจัดส่งที่ร้านค้าจ่ายจริง",
   ],
-  affiliateCommission: ["Affiliate commission"],
-  liveSpecialsServiceFee: ["LIVE Specials service fee"],
-  commerceGrowthFee: ["Commerce growth fee"],
-  infrastructureFee: ["Infrastructure fee"],
+  affiliateCommission: ["Affiliate commission", "ค่าคอมมิชชั่นแอฟฟิลิเอต"],
+  liveSpecialsServiceFee: ["LIVE Specials service fee", "ค่าบริการของคูปองไลฟ์คุ้ม"],
+  commerceGrowthFee: ["Commerce growth fee", "ค่าธรรมเนียมสนับสนุนการเติบโตของร้านค้า"],
+  infrastructureFee: ["Infrastructure fee", "ค่าธรรมเนียมโครงสร้างพื้นฐาน"],
   totalAdjustments: ["Total adjustments"],
   withdrawalAmount: ["Withdrawal amount"],
 };
@@ -328,7 +330,7 @@ async function importOrderWorkbook({ buffer, filename, uploadedBy }) {
   };
 }
 
-async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
+function parseIncomeWorkbook(buffer) {
   const workbook = getWorkbook(buffer);
   const orderSheet =
     workbook.Sheets["Order details"] ||
@@ -361,36 +363,7 @@ async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
     throw error;
   }
 
-  const period = toMonthKey(
-    findValue(dataRows[0] || [], headerIndexMap, [
-      ...INCOME_COLUMNS.settlementDate,
-      ...INCOME_COLUMNS.orderSettledTime,
-    ])
-  );
-
-  const fileHash = fileHashFromBuffer(buffer);
-  const existingBatch = await Batch.findOne({ fileHash }).lean();
-  if (existingBatch) {
-    return {
-      batchId: existingBatch._id,
-      batchType: existingBatch.batchType,
-      filename: existingBatch.filename,
-      period: existingBatch.period,
-      insertedIncomeEntries: 0,
-      skippedIncomeEntries: dataRows.length,
-      skippedReason: "duplicate_file_hash",
-    };
-  }
-
-  const batch = await createBatch({
-    batchType: "income",
-    filename,
-    fileHash,
-    period,
-    uploadedBy,
-  });
-
-  const incomeEntries = dataRows.map((row) => {
+  const entries = dataRows.map((row) => {
     const orderSettledTime = String(
       findValue(row, headerIndexMap, INCOME_COLUMNS.orderSettledTime)
     ).trim();
@@ -402,10 +375,7 @@ async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
     );
 
     return {
-      batchId: batch._id,
-      orderId: String(
-        findValue(row, headerIndexMap, INCOME_COLUMNS.orderId)
-      ).trim(),
+      orderId: String(findValue(row, headerIndexMap, INCOME_COLUMNS.orderId)).trim(),
       settlementDate,
       orderSettledTime,
       entryType,
@@ -417,9 +387,7 @@ async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
         findValue(row, headerIndexMap, INCOME_COLUMNS.subtotalAfterSellerDiscounts)
       ),
       sellerDiscounts: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.sellerDiscounts)),
-      refundSubtotal: toNumber(
-        findValue(row, headerIndexMap, INCOME_COLUMNS.refundSubtotal)
-      ),
+      refundSubtotal: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.refundSubtotal)),
       totalFees: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.totalFees)),
       transactionFee: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.transactionFee)),
       tiktokShopCommissionFee: toNumber(
@@ -440,6 +408,40 @@ async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
       withdrawalAmount: toNumber(findValue(row, headerIndexMap, INCOME_COLUMNS.withdrawalAmount)),
     };
   });
+
+  return entries;
+}
+
+async function importIncomeWorkbook({ buffer, filename, uploadedBy }) {
+  const parsedEntries = parseIncomeWorkbook(buffer);
+  const period = toMonthKey(parsedEntries[0]?.settlementDate);
+
+  const fileHash = fileHashFromBuffer(buffer);
+  const existingBatch = await Batch.findOne({ fileHash }).lean();
+  if (existingBatch) {
+    return {
+      batchId: existingBatch._id,
+      batchType: existingBatch.batchType,
+      filename: existingBatch.filename,
+      period: existingBatch.period,
+      insertedIncomeEntries: 0,
+      skippedIncomeEntries: parsedEntries.length,
+      skippedReason: "duplicate_file_hash",
+    };
+  }
+
+  const batch = await createBatch({
+    batchType: "income",
+    filename,
+    fileHash,
+    period,
+    uploadedBy,
+  });
+
+  const incomeEntries = parsedEntries.map((entry) => ({
+    ...entry,
+    batchId: batch._id,
+  }));
 
   const orderIds = [...new Set(incomeEntries.map((entry) => entry.orderId))];
   const settlementDates = [...new Set(incomeEntries.map((entry) => entry.settlementDate))];
@@ -576,6 +578,7 @@ async function deleteImportedBatch({ batchId }) {
 module.exports = {
   importOrderWorkbook,
   importIncomeWorkbook,
+  parseIncomeWorkbook,
   importProductMasterWorkbook,
   deleteImportedBatch,
   buildOrderItemLogicalKey,
