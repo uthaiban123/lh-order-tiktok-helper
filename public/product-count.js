@@ -118,7 +118,7 @@ async function fetchJson(url) {
 function renderSkuList() {
   if (!availableSkus.length) {
     skuList.innerHTML =
-      '<p class="support-copy">ไม่พบ Seller SKU — ลองค้นหาด้วยคำอื่น หรืออัปโหลด Product Master / Orders ก่อน</p>';
+      '<p class="support-copy">ไม่พบ Seller SKU</p>';
     return;
   }
 

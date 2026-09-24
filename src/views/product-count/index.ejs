@@ -4,10 +4,6 @@
         <div>
           <p class="section-kicker">Product Count</p>
           <h1>นับจำนวนสินค้าตามช่วงวันที่</h1>
-          <p class="support-copy">
-            เลือกช่วงวันที่ settlement และ Seller SKU ที่ต้องการนับ
-            ระบบจะคำนวณจำนวนขาย (TikTok units) และจำนวนเทียบเท่าฐาน (qty × pack multiplier)
-          </p>
         </div>
       </div>
 
@@ -44,7 +40,7 @@
           <input
             id="sku-search-input"
             type="text"
-            placeholder="ค้นหา Seller SKU, ชื่อสินค้า หรือ base code..."
+            placeholder="ค้นหา..."
           />
           <button id="sku-search-button" type="button" class="secondary-button">ค้นหา</button>
           <button id="select-all-button" type="button" class="secondary-button">เลือกทั้งหมด</button>
@@ -71,7 +67,7 @@
             ดาวน์โหลด CSV
           </button>
         </div>
-        <p id="count-status" class="support-copy">เลือกช่วงวันที่และ Seller SKU แล้วกดนับจำนวน</p>
+        <p id="count-status" class="support-copy"></p>
       </div>
 
       <div id="summary-panel" class="summary-panel hidden">
@@ -110,7 +106,7 @@
           </thead>
           <tbody id="result-table-body">
             <tr>
-              <td colspan="7" class="empty-state">ยังไม่มีผลลัพธ์ — กดปุ่ม "นับจำนวนสินค้า" เพื่อเริ่มต้น</td>
+              <td colspan="7" class="empty-state">ยังไม่มีผลลัพธ์</td>
             </tr>
           </tbody>
           <tfoot id="result-table-foot" class="hidden">

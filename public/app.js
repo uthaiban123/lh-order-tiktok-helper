@@ -88,6 +88,7 @@ function renderJson(data) {
   if (!output) {
     return;
   }
+  output.hidden = false;
   output.textContent = JSON.stringify(data, null, 2);
 }
 

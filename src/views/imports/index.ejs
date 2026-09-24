@@ -1,13 +1,11 @@
-<%- include('../partials/shell-open', { title, active, pageTitle, showHistory: false, extraStyles: ['/styles.css'] }) %>
-<section class="section-block">
-  <p class="section-copy">
-    คำสั่งซื้อของวันนี้ถูกดึงจาก TikTok Shop ทุก 1 ชั่วโมง ไฟล์ด้านล่างยังใช้ได้เมื่อต้องการนำเข้าเอง
-    Income และ Product Master ยังนำเข้าจากไฟล์
-  </p>
+<%- include('../partials/shell-open', { title, active, pageTitle, showHistory: false, extraStyles: ['/imports.css'] }) %>
+<section class="imports-page">
   <div class="import-grid">
-    <article class="panel">
-      <h3>นำเข้าไฟล์ Order</h3>
-      <p class="panel-copy">ไฟล์ Order Export สำหรับสินค้าและจำนวน ใช้เป็นทางสำรองของการดึงอัตโนมัติ</p>
+    <article class="import-card">
+      <div class="import-card-head">
+        <span class="import-card-icon"><i data-lucide="shopping-cart"></i></span>
+        <h3>นำเข้าไฟล์ Order</h3>
+      </div>
       <form id="orders-import-form" class="stack-form">
         <label for="orders-file">ไฟล์ Order Export (.xlsx)</label>
         <input id="orders-file" name="file" type="file" accept=".xlsx,.xls" required />
@@ -16,9 +14,12 @@
       </form>
       <p id="orders-last-result" class="form-feedback">ยังไม่มีการนำเข้าในรอบนี้</p>
     </article>
-    <article class="panel">
-      <h3>นำเข้าไฟล์ Income</h3>
-      <p class="panel-copy">ไฟล์ Income หรือ Settlement สำหรับยอดรับจริงและวัน settlement</p>
+
+    <article class="import-card">
+      <div class="import-card-head">
+        <span class="import-card-icon"><i data-lucide="wallet"></i></span>
+        <h3>นำเข้าไฟล์ Income</h3>
+      </div>
       <form id="income-import-form" class="stack-form">
         <label for="income-file">ไฟล์ Income / Settlement (.xlsx)</label>
         <input id="income-file" name="file" type="file" accept=".xlsx,.xls" required />
@@ -27,9 +28,12 @@
       </form>
       <p id="income-last-result" class="form-feedback">ยังไม่มีการนำเข้าในรอบนี้</p>
     </article>
-    <article class="panel" id="product-master">
-      <h3>นำเข้า Product Master</h3>
-      <p class="panel-copy">ใช้แมป product id, sku id และ seller SKU เพื่อให้รายงานจับคู่สินค้าได้แม่นขึ้น</p>
+
+    <article class="import-card" id="product-master">
+      <div class="import-card-head">
+        <span class="import-card-icon"><i data-lucide="boxes"></i></span>
+        <h3>นำเข้า Product Master</h3>
+      </div>
       <form id="product-master-import-form" class="stack-form">
         <label for="product-master-file">ไฟล์ TikTok Batch Edit Template (.xlsx)</label>
         <input id="product-master-file" name="file" type="file" accept=".xlsx,.xls" required />
@@ -39,8 +43,9 @@
       <p id="product-master-last-result" class="form-feedback">ยังไม่มีการนำเข้าในรอบนี้</p>
     </article>
   </div>
+
+  <pre id="output" class="imports-output" hidden>รอการทำงาน...</pre>
 </section>
-<pre id="output" class="output-shell">รอการทำงาน...</pre>
 <%- include('../partials/shell-close') %>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/app.js"></script>

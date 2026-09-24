@@ -201,7 +201,7 @@ async function loadPending() {
               <div class="tiktok-picker-row">
                 <input
                   type="search"
-                  placeholder="ค้นหา skuId, sellerSku, ชื่อสินค้า..."
+                  placeholder="ค้นหา..."
                   value="${escapeHtml(defaultSearch)}"
                   data-pick-search="${escapeHtml(pendingId)}"
                 />

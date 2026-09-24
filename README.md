@@ -54,9 +54,10 @@ npm start
 เหมาะสุดสำหรับใช้งานบนเซิร์ฟเวอร์ เพราะ deploy ซ้ำง่ายและ environment คงที่
 
 1. clone repo ลงเครื่องเซิร์ฟเวอร์
-2. สร้าง `.env`
-3. แก้ `MONGODB_URI` ให้ชี้ไป MongoDB จริง
-4. รันคำสั่งด้านล่าง
+2. สร้าง `.env` จาก `.env.example`
+3. ตั้ง `MONGODB_URI` / `DATABASE_NAME` ให้ชี้ MongoDB จริง
+4. ใส่ค่า `TIKTOK_*` ถ้าต้องการดึงออเดอร์อัตโนมัติ (ไม่ใส่ก็ใช้ได้ แต่ปุ่มดึงออเดอร์จะปิด)
+5. รันคำสั่งด้านล่าง
 
 ```bash
 docker compose build

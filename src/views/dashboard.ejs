@@ -1,6 +1,9 @@
 <%- include('./partials/shell-open', { title, active, pageTitle, showHistory: false, extraStyles: ['/dashboard.css'] }) %>
 <div class="dash">
   <div class="dash-sync">
+    <span class="dash-sync-icon" aria-hidden="true">
+      <i data-lucide="refresh-cw"></i>
+    </span>
     <span class="dot" id="sync-dot" data-state="loading"></span>
     <span id="sync-text">กำลังตรวจสอบการดึงคำสั่งซื้อ...</span>
     <button type="button" class="link-button" id="sync-button">ดึงตอนนี้</button>
@@ -45,7 +48,6 @@
         </div>
       </header>
       <div class="calendar" id="calendar" role="grid"></div>
-      <p class="hint">วันที่มีจุดสีเขียวมีข้อมูล settlement คลิกเพื่อเปิดรายงานรายวัน</p>
     </section>
   </div>
 

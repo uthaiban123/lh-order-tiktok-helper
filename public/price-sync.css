@@ -10,12 +10,12 @@
   gap: 4px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(15, 91, 92, 0.06);
+  background: rgba(15, 76, 92, 0.06);
 }
 
 .stat-label {
   font-size: 0.8rem;
-  color: #5a6b6b;
+  color: #5b6870;
 }
 
 .import-grid {

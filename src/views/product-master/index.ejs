@@ -4,9 +4,6 @@
         <div>
           <p class="section-kicker">Product Master</p>
           <h1>จัดการข้อมูลสินค้า</h1>
-          <p class="support-copy">
-            ดู แก้ไข และจัดการรายการสินค้าจาก TikTok พร้อมแมป base product code และ pack multiplier
-          </p>
         </div>
         <div class="hero-actions">
           <button id="open-create-button" type="button" class="primary-button">เพิ่มสินค้าใหม่</button>
@@ -25,7 +22,7 @@
           <input
             id="search-input"
             type="text"
-            placeholder="ค้นหาด้วย productId, skuId, sellerSku, ชื่อสินค้า หรือ base code..."
+            placeholder="ค้นหา..."
           />
           <button id="search-button" type="button" class="secondary-button">ค้นหา</button>
           <button id="clear-search-button" type="button" class="secondary-button">ล้าง</button>
@@ -121,12 +118,10 @@
             <div class="form-field">
               <label for="form-base-code">Base Product Code</label>
               <input id="form-base-code" type="text" />
-              <p class="field-hint">ถ้าเว้นว่าง ระบบจะคำนวณจาก Seller SKU อัตโนมัติ</p>
             </div>
             <div class="form-field">
               <label for="form-pack-multiplier">Pack Multiplier</label>
               <input id="form-pack-multiplier" type="number" min="1" value="1" />
-              <p class="field-hint">ถ้าเว้นว่าง ระบบจะคำนวณจาก Seller SKU อัตโนมัติ</p>
             </div>
           </div>
 

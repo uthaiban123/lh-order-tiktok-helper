@@ -236,11 +236,8 @@ async function loadCalendar(month) {
       day && inMonth ? "has-data" : "",
       iso === today ? "today" : "",
     ].filter(Boolean).join(" ");
-    const title = day
-      ? `${numberFormat.format(day.settledOrders)} ออเดอร์ที่ settle`
-      : "";
     return day && inMonth
-      ? `<button type="button" class="${classes}" data-date="${iso}" title="${title}">${date.getDate()}</button>`
+      ? `<button type="button" class="${classes}" data-date="${iso}">${date.getDate()}</button>`
       : `<button type="button" class="${classes}" disabled>${date.getDate()}</button>`;
   });
 

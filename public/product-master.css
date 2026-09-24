@@ -1,17 +1,17 @@
 :root {
-  --accent: #0f5b5c;
-  --accent-soft: #e4f0eb;
-  --danger: #c0392b;
-  --danger-soft: #fdeaea;
+  --accent: #0f4c5c;
+  --accent-soft: #e7f3f5;
+  --danger: #d64545;
+  --danger-soft: #fdecec;
 }
 
 .primary-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 20px;
-  border-radius: 12px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 11px;
   border: none;
   background: var(--accent);
   color: #fff;
@@ -20,7 +20,7 @@
   cursor: pointer;
 }
 .primary-button:hover {
-  background: #093b3b;
+  background: #0a3843;
 }
 
 .hero-actions {
@@ -298,12 +298,6 @@
 
 .required {
   color: var(--danger);
-}
-
-.field-hint {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--muted);
 }
 
 code {

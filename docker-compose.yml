@@ -7,8 +7,8 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-6600}:6600"
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
       PORT: 6600
-      MONGODB_URI: ${MONGODB_URI}
-      DATABASE_NAME: ${DATABASE_NAME}
