@@ -109,6 +109,7 @@ pm2 save
 
 - `income` เป็น source of truth ด้านการเงินและวัน settlement
 - `orders` เป็น source of truth ด้านสินค้าและจำนวนขาย
+- ออเดอร์ที่สร้างวันนี้ถูกดึงจาก TikTok Shop API ทุก 1 ชั่วโมง และยังนำเข้าไฟล์คำสั่งซื้อซ้ำได้
 - ระบบ join ข้อมูลด้วย `Order ID`
 - startup จะสร้าง collection และ sync index ให้อัตโนมัติ
 - import ซ้ำของ `income` จะ `skip duplicates`

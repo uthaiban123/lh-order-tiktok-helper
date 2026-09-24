@@ -1,9 +1,11 @@
 const app = require("./app");
 const env = require("./config/env");
 const { connectMongo } = require("./config/mongodb");
+const { startOrderSyncScheduler } = require("./services/orderSyncService");
 
 async function start() {
   await connectMongo();
+  startOrderSyncScheduler();
 
   app.listen(env.port, () => {
     console.log(`Server listening on http://localhost:${env.port}`);

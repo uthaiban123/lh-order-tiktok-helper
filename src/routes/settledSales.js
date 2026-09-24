@@ -20,6 +20,7 @@ const {
   importProductMasterWorkbook,
   deleteImportedBatch,
 } = require("../services/importService");
+const { getOrderSyncStatus, syncOrders } = require("../services/orderSyncService");
 
 const router = express.Router();
 const upload = multer({
@@ -46,6 +47,14 @@ router.get("/health", asyncHandler(async (req, res) => {
       productMasters: productMasterCount,
     },
   });
+}));
+
+router.get("/order-sync/status", asyncHandler(async (req, res) => {
+  res.json(await getOrderSyncStatus());
+}));
+
+router.post("/order-sync/run", asyncHandler(async (req, res) => {
+  res.json(await syncOrders());
 }));
 
 router.post("/init-db", asyncHandler(async (req, res) => {
