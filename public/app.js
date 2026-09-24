@@ -85,6 +85,9 @@ const statusNodes = {
 };
 
 function renderJson(data) {
+  if (!output) {
+    return;
+  }
   output.textContent = JSON.stringify(data, null, 2);
 }
 
@@ -208,6 +211,9 @@ function setChipState(element, state, label) {
 }
 
 function setStatusCardState(config, options) {
+  if (!config?.card || !config.count) {
+    return;
+  }
   config.card.dataset.state = options.cardState;
   setChipState(config.text, options.chipState, options.label);
   config.count.textContent = options.countLabel;
@@ -230,11 +236,13 @@ function updateHealthUI(counts) {
   const readiness = getReadiness(counts);
 
   setChipState(systemBadge, "ready", "ระบบพร้อมใช้งาน");
-  healthStatus.textContent =
-    `ข้อมูลในระบบ: batches ${formatNumber(counts.batches)}, ` +
-    `income ${formatNumber(counts.incomeEntries)}, ` +
-    `order items ${formatNumber(counts.orderItems)}, ` +
-    `product master ${formatNumber(counts.productMasters)}`;
+  if (healthStatus) {
+    healthStatus.textContent =
+      `ข้อมูลในระบบ: batches ${formatNumber(counts.batches)}, ` +
+      `income ${formatNumber(counts.incomeEntries)}, ` +
+      `order items ${formatNumber(counts.orderItems)}, ` +
+      `product master ${formatNumber(counts.productMasters)}`;
+  }
 
   setStatusCardState(statusNodes.orders, {
     cardState: readiness.hasOrders ? "ready" : "waiting",
@@ -259,34 +267,50 @@ function updateHealthUI(counts) {
 
   if (readiness.isReady) {
     setChipState(readinessBadge, "ready", "พร้อมสรุปรายงาน");
-    nextStepHint.textContent = readiness.hasProductMaster
-      ? "ข้อมูลหลักพร้อมแล้ว สามารถดูรายงานรายวันหรือรายเดือนได้ทันที"
-      : "ข้อมูลหลักพร้อมแล้ว สามารถสรุปรายงานได้ทันที และอัปโหลด Product Master เพิ่มได้หากต้องการความแม่นยำของชื่อสินค้า";
+    if (nextStepHint) {
+      nextStepHint.textContent = readiness.hasProductMaster
+        ? "ข้อมูลหลักพร้อมแล้ว สามารถดูรายงานรายวันหรือรายเดือนได้ทันที"
+        : "ข้อมูลหลักพร้อมแล้ว สามารถสรุปรายงานได้ทันที และอัปโหลด Product Master เพิ่มได้หากต้องการความแม่นยำของชื่อสินค้า";
+    }
   } else if (readiness.hasOrders || readiness.hasIncome) {
     setChipState(readinessBadge, "loading", "ขาดอีก 1 ไฟล์หลัก");
-    nextStepHint.textContent = readiness.hasOrders
-      ? "เหลืออัปโหลดไฟล์ Income อีก 1 ไฟล์เพื่อให้ระบบสรุปรายงานได้ครบ"
-      : "เหลืออัปโหลดไฟล์ Order อีก 1 ไฟล์เพื่อให้ระบบสรุปรายงานได้ครบ";
+    if (nextStepHint) {
+      nextStepHint.textContent = readiness.hasOrders
+        ? "เหลืออัปโหลดไฟล์ Income อีก 1 ไฟล์เพื่อให้ระบบสรุปรายงานได้ครบ"
+        : "เหลืออัปโหลดไฟล์ Order อีก 1 ไฟล์เพื่อให้ระบบสรุปรายงานได้ครบ";
+    }
   } else {
     setChipState(readinessBadge, "waiting", "รอข้อมูลหลัก");
-    nextStepHint.textContent =
-      "ต้องมีอย่างน้อย 2 ไฟล์หลักคือ Orders และ Income ก่อนจึงจะสรุปรายงานได้ครบ";
+    if (nextStepHint) {
+      nextStepHint.textContent =
+        "ต้องมีอย่างน้อย 2 ไฟล์หลักคือ Orders และ Income ก่อนจึงจะสรุปรายงานได้ครบ";
+    }
   }
 }
 
 function setHealthError(message) {
   setChipState(systemBadge, "error", "ระบบมีปัญหา");
   setChipState(readinessBadge, "error", "ตรวจสถานะไม่ได้");
-  healthStatus.textContent = message;
-  nextStepHint.textContent = "ยังไม่สามารถประเมินความพร้อมของข้อมูลได้จนกว่าจะเชื่อมต่อระบบสำเร็จ";
+  if (healthStatus) {
+    healthStatus.textContent = message;
+  }
+  if (nextStepHint) {
+    nextStepHint.textContent = "ยังไม่สามารถประเมินความพร้อมของข้อมูลได้จนกว่าจะเชื่อมต่อระบบสำเร็จ";
+  }
 }
 
 function setCalendarLoadingState(message) {
+  if (!calendarStatus || !calendarGrid) {
+    return;
+  }
   calendarStatus.textContent = message;
   calendarGrid.setAttribute("aria-busy", "true");
 }
 
 function setCalendarIdleState(message) {
+  if (!calendarStatus || !calendarGrid) {
+    return;
+  }
   calendarStatus.textContent = message;
   calendarGrid.setAttribute("aria-busy", "false");
 }
@@ -403,7 +427,9 @@ function updateImportFeedback(kind, data) {
       : `นำเข้า ${data.filename || "-"} แล้ว: เพิ่ม ${formatNumber(data.insertedProductMasters)} / อัปเดต ${formatNumber(data.updatedProductMasters)} / ข้าม ${formatNumber(data.skippedProductMasters)}`,
   };
 
-  statusNodes[kind].feedback.textContent = feedbackMap[kind];
+  if (statusNodes[kind]?.feedback) {
+    statusNodes[kind].feedback.textContent = feedbackMap[kind];
+  }
 }
 
 function buildImportNotice(kind, data, counts, becameReady, options = {}) {
@@ -674,6 +700,9 @@ function renderTodayWorkflowDashboard({
 }
 
 function setTodayWorkflowError(message) {
+  if (!todayWorkflowTitle) {
+    return;
+  }
   setChipState(todayWorkflowBadge, "error", "โหลดงานวันนี้ไม่สำเร็จ");
   todayWorkflowTitle.textContent = "ยังสรุปงานวันนี้ไม่ได้";
   todayWorkflowCopy.textContent = message;
@@ -688,6 +717,9 @@ function setTodayWorkflowError(message) {
 }
 
 async function loadTodayWorkflowDashboard() {
+  if (!todayWorkflowTitle) {
+    return;
+  }
   const today = getTodayIso();
   const month = today.slice(0, 7);
 
@@ -806,6 +838,9 @@ function renderCalendar(month) {
 }
 
 async function loadCalendar(month) {
+  if (!calendarGrid || !calendarMonthLabel || !calendarStatus) {
+    return;
+  }
   calendarMonth = month;
   setCalendarLoadingState("กำลังโหลดข้อมูลปฏิทิน...");
   calendarMonthLabel.textContent = formatMonthLabel(month);
@@ -882,7 +917,54 @@ async function handleImportSubmit({ event, kind, url, busyLabel }) {
   }
 }
 
-initDbButton.addEventListener("click", async () => {
+const orderSyncStatus = document.getElementById("order-sync-status");
+const orderSyncMeta = document.getElementById("order-sync-meta");
+const orderSyncButton = document.getElementById("order-sync-button");
+
+function renderOrderSyncStatus(data) {
+  if (!orderSyncStatus) {
+    return;
+  }
+
+  if (!data.enabled) {
+    orderSyncStatus.textContent = "ยังไม่ได้ตั้งค่า TikTok API บนเครื่องนี้ ใช้การนำเข้าไฟล์ได้ตามปกติ";
+    if (orderSyncMeta) {
+      orderSyncMeta.textContent = "";
+    }
+    return;
+  }
+
+  const when = data.lastSuccessAt ? formatDateTime(data.lastSuccessAt) : "ยังไม่เคยดึง";
+  orderSyncStatus.textContent = data.running
+    ? "กำลังดึงคำสั่งซื้อ..."
+    : `ดึงอัตโนมัติทุก 1 ชั่วโมง · สำเร็จล่าสุด ${when}`;
+
+  if (!orderSyncMeta) {
+    return;
+  }
+
+  const stats = data.lastStats;
+  const detail = stats
+    ? `รอบล่าสุดอัปเดต ${formatNumber(stats.upserted)} ออเดอร์ จาก ${formatNumber(stats.fetched)} รายการ`
+    : "รอบแรกจะดึงออเดอร์ที่สร้างวันนี้";
+  orderSyncMeta.textContent = data.lastError
+    ? `${detail} · ${data.lastError}`
+    : `${detail} · ออเดอร์ที่สร้างวันนี้ ${formatNumber(data.ordersCreatedToday)} รายการ`;
+}
+
+async function loadOrderSyncStatus() {
+  if (!orderSyncStatus) {
+    return;
+  }
+
+  try {
+    renderOrderSyncStatus(await fetchJson("/api/tiktok-settled-sales/order-sync/status"));
+  } catch (error) {
+    orderSyncStatus.textContent = `ตรวจสถานะการดึงไม่สำเร็จ: ${error.message}`;
+  }
+}
+
+initDbButton?.addEventListener("click", async () => {
   initDbButton.disabled = true;
 
   try {
@@ -917,7 +999,42 @@ initDbButton.addEventListener("click", async () => {
   }
 });
 
-productMasterImportForm.addEventListener("submit", (event) =>
+orderSyncButton?.addEventListener("click", async () => {
+  orderSyncButton.disabled = true;
+  if (orderSyncStatus) {
+    orderSyncStatus.textContent = "กำลังดึงคำสั่งซื้อ...";
+  }
+
+  try {
+    const response = await fetch("/api/tiktok-settled-sales/order-sync/run", { method: "POST" });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.message || payload.error || "ดึงคำสั่งซื้อไม่สำเร็จ");
+    }
+    renderJson(payload);
+    await loadOrderSyncStatus();
+    await loadHealth().catch(() => undefined);
+    await showNotice({
+      icon: payload.skipped ? "info" : "success",
+      title: payload.skipped ? "ยังดึงไม่ได้" : "ดึงคำสั่งซื้อแล้ว",
+      html: payload.skipped
+        ? "<p>เครื่องนี้ยังไม่มีค่า TikTok API</p>"
+        : `<p>อัปเดต ${formatNumber(payload.upserted)} ออเดอร์</p>`,
+    });
+  } catch (error) {
+    renderJson({ error: error.message });
+    await loadOrderSyncStatus();
+    await showNotice({
+      icon: "error",
+      title: "ดึงคำสั่งซื้อไม่สำเร็จ",
+      html: `<p>${escapeHtml(error.message)}</p>`,
+    });
+  } finally {
+    orderSyncButton.disabled = false;
+  }
+});
+
+productMasterImportForm?.addEventListener("submit", (event) =>
   handleImportSubmit({
     event,
     kind: "productMaster",
@@ -926,7 +1043,7 @@ productMasterImportForm.addEventListener("submit", (event) =>
   })
 );
 
-ordersImportForm.addEventListener("submit", (event) =>
+ordersImportForm?.addEventListener("submit", (event) =>
   handleImportSubmit({
     event,
     kind: "orders",
@@ -935,7 +1052,7 @@ ordersImportForm.addEventListener("submit", (event) =>
   })
 );
 
-incomeImportForm.addEventListener("submit", (event) =>
+incomeImportForm?.addEventListener("submit", (event) =>
   handleImportSubmit({
     event,
     kind: "income",
@@ -944,7 +1061,7 @@ incomeImportForm.addEventListener("submit", (event) =>
   })
 );
 
-dailyForm.addEventListener("submit", async (event) => {
+dailyForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(event.currentTarget);
   const date = formData.get("date");
@@ -964,7 +1081,7 @@ dailyForm.addEventListener("submit", async (event) => {
   }
 });
 
-monthlyForm.addEventListener("submit", async (event) => {
+monthlyForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(event.currentTarget);
   const month = formData.get("month");
@@ -984,19 +1101,19 @@ monthlyForm.addEventListener("submit", async (event) => {
   }
 });
 
-calendarPrevButton.addEventListener("click", () => {
+calendarPrevButton?.addEventListener("click", () => {
   loadCalendar(shiftMonth(calendarMonth || getCurrentMonthValue(), -1));
 });
 
-calendarNextButton.addEventListener("click", () => {
+calendarNextButton?.addEventListener("click", () => {
   loadCalendar(shiftMonth(calendarMonth || getCurrentMonthValue(), 1));
 });
 
-calendarTodayButton.addEventListener("click", () => {
+calendarTodayButton?.addEventListener("click", () => {
   loadCalendar(getCurrentMonthValue());
 });
 
-calendarGrid.addEventListener("click", async (event) => {
+calendarGrid?.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-date]");
   if (!button) {
     return;
@@ -1022,6 +1139,7 @@ calendarGrid.addEventListener("click", async (event) => {
 });
 
 setDefaultPeriods();
+loadOrderSyncStatus();
 loadHealth()
   .catch(() => undefined)
   .finally(() => {

@@ -38,6 +38,7 @@ npm start
 ## Main Routes
 
 - `GET /`
+- `GET /imports`
 - `GET /reports`
 - `GET /reports/daily?date=YYYY-MM-DD`
 - `GET /reports/monthly?month=YYYY-MM`

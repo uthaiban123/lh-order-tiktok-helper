@@ -1,28 +1,4 @@
-<!DOCTYPE html>
-<html lang="th">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/report.css" />
-    <link rel="stylesheet" href="/product-count.css" />
-  </head>
-  <body>
-    <div class="page-nav-shell">
-      <nav class="page-nav" aria-label="Page navigation">
-        <div class="page-nav-history">
-          <button type="button" class="nav-button" data-nav-back data-fallback="/">
-            ย้อนกลับ
-          </button>
-        </div>
-        <div class="page-nav-links">
-          <a class="nav-link" href="/">หน้าหลักระบบ</a>
-          <a class="nav-link" href="/reports">หน้ารายงาน</a>
-          <a class="nav-link" href="/product-master">จัดการ Product Master</a>
-        </div>
-      </nav>
-    </div>
-
+<%- include('../partials/shell-open', { title, active: 'product-count', pageTitle: title, extraStyles: ['/report.css', '/product-count.css'] }) %>
     <div class="report-shell">
       <div class="report-hero">
         <div>
@@ -151,5 +127,6 @@
 
     <script charset="utf-8" src="/report.js"></script>
     <script charset="utf-8" src="/product-count.js"></script>
+<%- include('../partials/shell-close') %>
   </body>
 </html>

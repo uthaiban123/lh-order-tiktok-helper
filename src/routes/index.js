@@ -1,4 +1,5 @@
 const express = require("express");
+const pagesRouter = require("./pages");
 const settledSalesRouter = require("./settledSales");
 const reportsRouter = require("./reports");
 const productMasterRouter = require("./productMaster");
@@ -7,6 +8,7 @@ const productCountRouter = require("./productCount");
 
 const router = express.Router();
 
+router.use(pagesRouter);
 router.use("/reports", reportsRouter);
 router.use("/product-count", productCountRouter);
 router.use("/api/tiktok-settled-sales", settledSalesRouter);

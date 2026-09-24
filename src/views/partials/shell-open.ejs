@@ -1,0 +1,45 @@
+<%
+  const navActive = typeof active === "undefined" ? "" : active;
+  const styles = typeof extraStyles === "undefined" ? [] : extraStyles;
+  const heading = typeof pageTitle === "undefined" ? title : pageTitle;
+  const fallback = typeof navFallback === "undefined" ? "/" : navFallback;
+  const bodyClassName = typeof bodyClass === "undefined" ? "" : bodyClass;
+  const historyButtons = typeof showHistory === "undefined" ? true : showHistory;
+%>
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <% styles.forEach(function (href) { %>
+      <link rel="stylesheet" href="<%= href %>" />
+    <% }) %>
+    <link rel="stylesheet" href="/shell.css" />
+  </head>
+  <body class="app-body <%= bodyClassName %>">
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <p class="brand">LH Orders</p>
+        <p class="nav-label">ภาพรวม</p>
+        <a class="side-link <%= navActive === 'dashboard' ? 'active' : '' %>" href="/">แดชบอร์ด</a>
+        <p class="nav-label">รายงาน</p>
+        <a class="side-link <%= navActive === 'reports' ? 'active' : '' %>" href="/reports">รายงานยอดขาย</a>
+        <a class="side-link <%= navActive === 'product-count' ? 'active' : '' %>" href="/product-count">นับจำนวนสินค้า</a>
+        <p class="nav-label">นำเข้าข้อมูล</p>
+        <a class="side-link <%= navActive === 'imports' ? 'active' : '' %>" href="/imports">นำเข้าไฟล์</a>
+        <a class="side-link <%= navActive === 'product-master' ? 'active' : '' %>" href="/product-master">Product Master</a>
+        <a class="side-link <%= navActive === 'price-sync' ? 'active' : '' %>" href="/price-sync">ซิงค์ราคา</a>
+      </aside>
+      <div class="main">
+        <header class="navbar">
+          <button class="menu-toggle" type="button" data-menu-toggle>เมนู</button>
+          <h1><%= heading %></h1>
+          <% if (historyButtons) { %>
+          <div class="navbar-actions">
+            <button type="button" data-nav-back data-fallback="<%= fallback %>">ย้อนกลับ</button>
+            <button type="button" data-nav-forward>ไปต่อ</button>
+          </div>
+          <% } %>
+        </header>
+        <div class="content">

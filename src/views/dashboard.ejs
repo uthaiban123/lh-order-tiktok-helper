@@ -1,0 +1,76 @@
+<%- include('./partials/shell-open', { title, active, pageTitle, showHistory: false, extraStyles: ['/dashboard.css'] }) %>
+<div class="dash">
+  <div class="dash-sync">
+    <span class="dot" id="sync-dot" data-state="loading"></span>
+    <span id="sync-text">กำลังตรวจสอบการดึงคำสั่งซื้อ...</span>
+    <button type="button" class="link-button" id="sync-button">ดึงตอนนี้</button>
+  </div>
+
+  <section class="kpis">
+    <article class="kpi">
+      <span>ออเดอร์ใหม่วันนี้</span>
+      <strong id="kpi-new-orders">-</strong>
+    </article>
+    <article class="kpi">
+      <span>Settle วันนี้</span>
+      <strong id="kpi-settled">-</strong>
+    </article>
+    <article class="kpi">
+      <span>ยอดรับจริงวันนี้</span>
+      <strong id="kpi-amount">-</strong>
+    </article>
+    <article class="kpi">
+      <span>จับคู่สินค้าได้</span>
+      <strong id="kpi-coverage">-</strong>
+    </article>
+  </section>
+
+  <div class="dash-grid">
+    <section class="card">
+      <header class="card-head">
+        <h2>ต้องตรวจวันนี้</h2>
+        <a id="today-report-link" href="/reports">เปิดรายงานวันนี้</a>
+      </header>
+      <ul class="list" id="check-list">
+        <li class="muted">กำลังโหลด...</li>
+      </ul>
+    </section>
+
+    <section class="card calendar-card">
+      <header class="card-head">
+        <h2 id="calendar-label">ปฏิทิน Settlement</h2>
+        <div class="calendar-nav">
+          <button type="button" class="icon-button" id="calendar-prev" aria-label="เดือนก่อน">‹</button>
+          <button type="button" class="icon-button" id="calendar-next" aria-label="เดือนถัดไป">›</button>
+        </div>
+      </header>
+      <div class="calendar" id="calendar" role="grid"></div>
+      <p class="hint">วันที่มีจุดสีเขียวมีข้อมูล settlement คลิกเพื่อเปิดรายงานรายวัน</p>
+    </section>
+  </div>
+
+  <footer class="dash-foot">
+    <span id="system-text">กำลังตรวจสอบระบบ...</span>
+    <button type="button" class="link-button" id="imports-history-button">นำเข้าล่าสุด</button>
+    <button type="button" class="link-button" id="init-db-button">เตรียมฐานข้อมูล</button>
+  </footer>
+</div>
+
+<dialog id="imports-dialog" class="imports-dialog">
+  <header class="imports-dialog-head">
+    <h2>นำเข้าล่าสุด</h2>
+    <div class="imports-dialog-actions">
+      <a href="/imports">ไปหน้านำเข้าไฟล์</a>
+      <button type="button" class="icon-button" id="imports-dialog-close" aria-label="ปิด">×</button>
+    </div>
+  </header>
+  <ul class="list" id="import-list">
+    <li class="muted">กำลังโหลด...</li>
+  </ul>
+</dialog>
+
+<%- include('./partials/shell-close') %>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/dashboard.js"></script>
+  </body>
+</html>
