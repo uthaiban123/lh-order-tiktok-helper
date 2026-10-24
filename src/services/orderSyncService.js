@@ -9,6 +9,8 @@ const { refreshAccessToken, searchOrdersPage } = require("./tiktokShopClient");
 const API_BATCH_HASH = "tiktok-api-order-sync";
 const AUTH_STATE_KEY = "tiktok_auth";
 const SYNC_STATE_KEY = "order_sync";
+const BACKFILL_STATE_KEY = "order_backfill";
+const BACKFILL_VERSION = 1;
 const OVERLAP_SECONDS = 3 * 60 * 60;
 const PAGE_SIZE = 100;
 const MAX_PAGES = 200;
@@ -58,14 +60,18 @@ function formatBangkokDate(now = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-function computeSyncWindow({ nowUnix, startOfTodayUnix, cursorUnix }) {
+function getSyncFloorUnix() {
+  return Math.floor(Date.parse(`${env.orderSyncStartDate}T00:00:00+07:00`) / 1000);
+}
+
+function computeSyncWindow({ nowUnix, floorUnix, startOfTodayUnix, cursorUnix }) {
   const cursor = Number(cursorUnix || 0);
-  if (!cursor || cursor < startOfTodayUnix) {
+  if (!cursor) {
     return {
       mode: "create_time",
       sortField: "create_time",
       filters: {
-        create_time_ge: startOfTodayUnix,
+        create_time_ge: Math.max(floorUnix, startOfTodayUnix),
         create_time_lt: nowUnix,
       },
     };
@@ -75,8 +81,8 @@ function computeSyncWindow({ nowUnix, startOfTodayUnix, cursorUnix }) {
     mode: "update_time",
     sortField: "update_time",
     filters: {
-      create_time_ge: startOfTodayUnix,
-      update_time_ge: Math.max(startOfTodayUnix, cursor - OVERLAP_SECONDS),
+      create_time_ge: floorUnix,
+      update_time_ge: Math.max(floorUnix, cursor - OVERLAP_SECONDS),
       update_time_lt: nowUnix,
     },
   };
@@ -87,10 +93,10 @@ function toMoney(value) {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
-function mapTikTokOrder(order, startOfTodayUnix) {
+function mapTikTokOrder(order, floorUnix) {
   const createTime = Number(order.create_time || 0);
   const orderId = String(order.id || order.order_id || "").trim();
-  if (!orderId || !createTime || createTime < startOfTodayUnix) {
+  if (!orderId || !createTime || createTime < floorUnix) {
     return null;
   }
 
@@ -223,7 +229,7 @@ async function getApiBatch(now) {
   });
 }
 
-async function fetchTodayOrders(accessToken, window) {
+async function fetchOrders(accessToken, window) {
   const orders = [];
   let pageToken = "";
   let pages = 0;
@@ -251,6 +257,61 @@ async function fetchTodayOrders(accessToken, window) {
   } while (pageToken);
 
   return { orders, pages };
+}
+
+function canWriteOrder(existingHeader, batchId, { missingOnly }) {
+  if (!existingHeader) {
+    return true;
+  }
+  return !missingOnly && String(existingHeader.batchId) === String(batchId);
+}
+
+async function writeOrders(orders, { floorUnix, batchId, missingOnly }) {
+  let upserted = 0;
+  let skipped = 0;
+
+  for (const order of orders) {
+    const mapped = mapTikTokOrder(order, floorUnix);
+    if (!mapped) {
+      continue;
+    }
+    const existing = await OrderHeader.findOne({ orderId: mapped.orderId })
+      .select({ batchId: 1 })
+      .lean();
+    if (!canWriteOrder(existing, batchId, { missingOnly })) {
+      skipped += 1;
+      continue;
+    }
+    await upsertMappedOrder(mapped, batchId);
+    upserted += 1;
+  }
+
+  return { upserted, skipped };
+}
+
+async function runBackfillOnce({ accessToken, floorUnix, nowUnix, batchId }) {
+  const state = await SyncState.findOne({ key: BACKFILL_STATE_KEY }).lean();
+  if (Number(state?.version || 0) >= BACKFILL_VERSION) {
+    return null;
+  }
+
+  const { orders, pages } = await fetchOrders(accessToken, {
+    sortField: "create_time",
+    filters: {
+      create_time_ge: floorUnix,
+      create_time_lt: nowUnix,
+    },
+  });
+  const result = await writeOrders(orders, { floorUnix, batchId, missingOnly: true });
+  const stats = { fetched: orders.length, pages, ...result };
+
+  await SyncState.updateOne(
+    { key: BACKFILL_STATE_KEY },
+    { $set: { version: BACKFILL_VERSION, lastSuccessAt: new Date(), lastStats: stats } },
+    { upsert: true }
+  );
+  console.log(`Order backfill inserted ${result.upserted} missing orders`);
+  return stats;
 }
 
 async function upsertMappedOrder(mapped, batchId) {
@@ -281,11 +342,12 @@ async function runOrderSync() {
 
   const now = new Date();
   const nowUnix = Math.floor(now.getTime() / 1000);
-  const startOfTodayUnix = getBangkokStartOfTodayUnix(now);
+  const floorUnix = getSyncFloorUnix();
   const syncState = await SyncState.findOne({ key: SYNC_STATE_KEY }).lean();
   const window = computeSyncWindow({
     nowUnix,
-    startOfTodayUnix,
+    floorUnix,
+    startOfTodayUnix: getBangkokStartOfTodayUnix(now),
     cursorUnix: syncState?.cursorUnix,
   });
 
@@ -297,24 +359,27 @@ async function runOrderSync() {
 
   try {
     const accessToken = await ensureAccessToken();
-    const { orders, pages } = await fetchTodayOrders(accessToken, window);
     const batch = await getApiBatch(now);
-    let upserted = 0;
-
-    for (const order of orders) {
-      const mapped = mapTikTokOrder(order, startOfTodayUnix);
-      if (!mapped) {
-        continue;
-      }
-      await upsertMappedOrder(mapped, batch._id);
-      upserted += 1;
-    }
+    const backfill = await runBackfillOnce({
+      accessToken,
+      floorUnix,
+      nowUnix,
+      batchId: batch._id,
+    });
+    const { orders, pages } = await fetchOrders(accessToken, window);
+    const { upserted, skipped } = await writeOrders(orders, {
+      floorUnix,
+      batchId: batch._id,
+      missingOnly: false,
+    });
 
     const lastStats = {
       mode: window.mode,
       fetched: orders.length,
       upserted,
+      skippedFileOrders: skipped,
       pages,
+      ...(backfill ? { backfillInserted: backfill.upserted } : {}),
     };
     await SyncState.updateOne(
       { key: SYNC_STATE_KEY },
@@ -366,7 +431,8 @@ async function getOrderSyncStatus() {
     running: Boolean(currentRun),
     intervalMinutes: 60,
     overlapHours: 3,
-    scope: "orders_created_today",
+    scope: "orders_since_start_date",
+    startDate: env.orderSyncStartDate,
     lastRunAt: state?.lastRunAt || null,
     lastSuccessAt: state?.lastSuccessAt || null,
     lastError: state?.lastError || "",
@@ -398,6 +464,7 @@ function startOrderSyncScheduler() {
 }
 
 module.exports = {
+  canWriteOrder,
   computeSyncWindow,
   formatBangkokDateTime,
   getBangkokStartOfTodayUnix,

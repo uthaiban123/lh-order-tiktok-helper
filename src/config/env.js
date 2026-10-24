@@ -19,6 +19,7 @@ const env = {
   port: Number(process.env.PORT || 6600),
   mongoUri: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017",
   databaseName: process.env.DATABASE_NAME || "lh_order_tiktok_helper",
+  orderSyncStartDate: process.env.ORDER_SYNC_START_DATE || "2026-09-24",
   tiktok: {
     appKey: process.env.TIKTOK_APP_KEY || "",
     appSecret: process.env.TIKTOK_APP_SECRET || "",

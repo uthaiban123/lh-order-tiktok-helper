@@ -2,15 +2,18 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { buildSign } = require("../src/services/tiktokShopClient");
 const {
+  canWriteOrder,
   computeSyncWindow,
   mapTikTokOrder,
 } = require("../src/services/orderSyncService");
 
 const START = 1_758_643_200;
+const DAY = 24 * 60 * 60;
 
-test("first sync of the day uses the create time of today", () => {
+test("first sync ever uses the create time of today", () => {
   const window = computeSyncWindow({
     nowUnix: START + 14 * 60 * 60,
+    floorUnix: START - 30 * DAY,
     startOfTodayUnix: START,
     cursorUnix: 0,
   });
@@ -20,18 +23,43 @@ test("first sync of the day uses the create time of today", () => {
   assert.equal(window.filters.update_time_ge, undefined);
 });
 
-test("later syncs look back three hours and stay inside today", () => {
+test("later syncs look back three hours from the last cursor", () => {
   const nowUnix = START + 16 * 60 * 60;
   const window = computeSyncWindow({
     nowUnix,
+    floorUnix: START - 30 * DAY,
     startOfTodayUnix: START,
     cursorUnix: START + 15 * 60 * 60,
   });
 
   assert.equal(window.mode, "update_time");
-  assert.equal(window.filters.create_time_ge, START);
+  assert.equal(window.filters.create_time_ge, START - 30 * DAY);
   assert.equal(window.filters.update_time_ge, START + 12 * 60 * 60);
   assert.equal(window.filters.update_time_lt, nowUnix);
+});
+
+test("the first sync after midnight still covers late orders from yesterday", () => {
+  const floorUnix = START - 30 * DAY;
+  const lastRunYesterday = START - 46 * 60;
+  const window = computeSyncWindow({
+    nowUnix: START + 14 * 60,
+    floorUnix,
+    startOfTodayUnix: START,
+    cursorUnix: lastRunYesterday,
+  });
+  const lateOrderUpdate = START - 30 * 60;
+
+  assert.ok(window.filters.update_time_ge <= lateOrderUpdate);
+  assert.equal(window.filters.create_time_ge, floorUnix);
+  assert.ok(mapTikTokOrder({ id: "9", create_time: lateOrderUpdate, line_items: [] }, floorUnix));
+});
+
+test("never overwrites orders imported from files", () => {
+  const apiBatch = "api";
+  assert.equal(canWriteOrder(null, apiBatch, { missingOnly: true }), true);
+  assert.equal(canWriteOrder({ batchId: "file" }, apiBatch, { missingOnly: false }), false);
+  assert.equal(canWriteOrder({ batchId: "api" }, apiBatch, { missingOnly: false }), true);
+  assert.equal(canWriteOrder({ batchId: "api" }, apiBatch, { missingOnly: true }), false);
 });
 
 test("maps a TikTok order into one header and grouped items", () => {
@@ -71,7 +99,7 @@ test("maps a TikTok order into one header and grouped items", () => {
   assert.equal(mapped.items[0].itemSubtotalAfterDiscount, 160.5);
 });
 
-test("ignores orders created before today", () => {
+test("ignores orders created before the sync start date", () => {
   const mapped = mapTikTokOrder(
     {
       id: "1",
